@@ -31,13 +31,17 @@ const es = {
     firstWeekContainsDate: 1
   }
 };
-import { Wifi, WifiOff, BatteryMedium, BatteryCharging, Volume2, VolumeX, VolumeIcon } from "lucide-react";
+import { 
+  Wifi, WifiOff, BatteryMedium, BatteryCharging, 
+  Volume2, VolumeX, VolumeIcon, Power, RefreshCcw, Moon,
+  Sun, CloudRain, Thermometer, MapPin, Clock
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Slider } from "@/components/ui/slider";
-import { Power, RefreshCcw, Moon } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, 
+  DropdownMenuItem, DropdownMenuSeparator 
+} from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface BarraTareasProps {
@@ -49,10 +53,27 @@ const BarraTareas: React.FC<BarraTareasProps> = ({ fecha }) => {
   const [volumenAnterior, setVolumenAnterior] = useState(state.volumen);
   const [mostrarDialogApagado, setMostrarDialogApagado] = useState(false);
   const [accionSistema, setAccionSistema] = useState<'apagar' | 'reiniciar' | 'suspender' | null>(null);
+  const [temperatura, setTemperatura] = useState(28);
+  const [condicionClima, setCondicionClima] = useState<'soleado' | 'nublado' | 'lluvioso'>('soleado');
   
   // Formatear la fecha y hora
   const horaActual = format(fecha, "HH:mm");
   const fechaActual = format(fecha, "d 'de' MMMM, yyyy");
+  
+  // Simular cambios de clima aleatorios
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      // Simular cambio de temperatura (entre 24 y 32 grados)
+      setTemperatura(Math.floor(24 + Math.random() * 8));
+      
+      // Simular cambio de condición climática
+      const condiciones = ['soleado', 'nublado', 'lluvioso'];
+      const indiceAleatorio = Math.floor(Math.random() * 3);
+      setCondicionClima(condiciones[indiceAleatorio] as 'soleado' | 'nublado' | 'lluvioso');
+    }, 60000 * 10); // Cambiar cada 10 minutos
+    
+    return () => clearInterval(intervalo);
+  }, []);
   
   // Función que maneja el volumen actual de la página
   const getVolumenSistema = async () => {
@@ -99,6 +120,32 @@ const BarraTareas: React.FC<BarraTareasProps> = ({ fecha }) => {
       dispatch({ type: "ACTUALIZAR_VOLUMEN", payload: 0 });
     } else {
       dispatch({ type: "ACTUALIZAR_VOLUMEN", payload: volumenAnterior || 50 });
+    }
+  };
+
+  // Obtener icono del clima según la condición
+  const getClimaIcon = () => {
+    switch (condicionClima) {
+      case 'lluvioso':
+        return <CloudRain className="h-5 w-5 text-blue-400" />;
+      case 'nublado':
+        return <CloudRain className="h-5 w-5 text-gray-400" />;
+      case 'soleado':
+      default:
+        return <Sun className="h-5 w-5 text-yellow-400" />;
+    }
+  };
+
+  // Obtener descripción del clima
+  const getClimaDescripcion = () => {
+    switch (condicionClima) {
+      case 'lluvioso':
+        return 'Lluvioso';
+      case 'nublado':
+        return 'Nublado';
+      case 'soleado':
+      default:
+        return 'Soleado';
     }
   };
 
@@ -336,26 +383,62 @@ const BarraTareas: React.FC<BarraTareasProps> = ({ fecha }) => {
             </Tooltip>
           </TooltipProvider>
           
-          {/* Fecha y hora con calendario */}
-          <Dialog>
-            <DialogTrigger asChild>
+          {/* Fecha y hora con dropdown menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <motion.div 
                 whileHover={{ scale: 1.05 }}
                 className="px-2 py-1 bg-dos-blue rounded text-sm font-mono cursor-pointer"
               >
                 {horaActual}
               </motion.div>
-            </DialogTrigger>
-            <DialogContent className="bg-dos-dark-blue border border-dos-blue flex flex-col items-center justify-center">
-              <Calendar
-                mode="single"
-                selected={fecha}
-                defaultMonth={fecha}
-                disabled
-                className="text-white mx-auto"
-              />
-            </DialogContent>
-          </Dialog>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="end" 
+              alignOffset={-5}
+              className="w-64 bg-dos-dark-blue border border-dos-blue text-white p-3 mb-3"
+              sideOffset={5}
+            >
+              <div className="flex flex-col space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-dos-green" />
+                    <h3 className="text-lg font-bold">{horaActual}</h3>
+                  </div>
+                  <p className="text-sm text-gray-300">{fechaActual}</p>
+                </div>
+                
+                <DropdownMenuSeparator className="bg-gray-600" />
+                
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-2 text-red-400" />
+                    <p className="text-sm">San Diego, Carabobo, Venezuela</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-800 p-3 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center">
+                    {getClimaIcon()}
+                    <div className="ml-2">
+                      <p className="text-sm font-medium">{getClimaDescripcion()}</p>
+                      <p className="text-xs text-gray-400">Humedad: {Math.floor(60 + Math.random() * 20)}%</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Thermometer className="h-4 w-4 text-red-400 mr-1" />
+                    <span className="text-lg font-semibold">{temperatura}°C</span>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-400">
+                  <p>Zona horaria: UTC-4 (Hora de Venezuela)</p>
+                  <p>Amanecer: 06:15 AM</p>
+                  <p>Atardecer: 06:45 PM</p>
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </>

@@ -40,6 +40,7 @@ const HojaCalculo: React.FC = () => {
   const [celdaActiva, setCeldaActiva] = useState<string | null>(null);
   const [valorFormula, setValorFormula] = useState<string>("");
   const [tabActiva, setTabActiva] = useState<string>("calculos");
+  const [procesando, setProcesando] = useState<boolean>(false);
 
   // Inicializar datos vacíos
   useEffect(() => {
@@ -62,7 +63,11 @@ const HojaCalculo: React.FC = () => {
     for (let i = 0; i < FILAS; i++) {
       nuevosEvaluados.push([]);
       for (let j = 0; j < COLUMNAS; j++) {
-        nuevosEvaluados[i][j] = evaluarCelda(datos[i][j], datos);
+        try {
+          nuevosEvaluados[i][j] = evaluarCelda(datos[i][j], datos);
+        } catch (error) {
+          nuevosEvaluados[i][j] = "#ERROR";
+        }
       }
     }
     
@@ -104,9 +109,10 @@ const HojaCalculo: React.FC = () => {
     return datosCeldas[fila][columna];
   };
 
-  // Evaluar fórmulas
+  // Evaluar fórmulas de manera segura
   const evaluarCelda = (valor: string, datosCeldas: string[][]): string => {
-    if (!valor.startsWith("=")) return valor;
+    if (!valor || !valor.startsWith("=")) return valor;
+    setProcesando(true);
     
     try {
       // Extraer la fórmula (sin el signo =)
@@ -115,43 +121,94 @@ const HojaCalculo: React.FC = () => {
       // Buscar referencias de celdas (A1, B2, etc.) y reemplazarlas por sus valores
       const regexCelda = /([A-H])([1-9]|10)/g;
       let match;
+      let refVisitadas = new Set<string>();
       
       while ((match = regexCelda.exec(formula)) !== null) {
         const refCelda = match[0];
+        
+        // Evitar referencias circulares
+        if (refVisitadas.has(refCelda)) {
+          setProcesando(false);
+          return "#REF!";
+        }
+        
+        refVisitadas.add(refCelda);
         const valorCelda = obtenerValorCelda(refCelda, datosCeldas);
         
-        // Si la celda referenciada contiene una fórmula, evitar referencias circulares
+        // Si la celda referenciada contiene una fórmula, considerar error de referencia
         if (valorCelda && valorCelda.startsWith("=")) {
+          setProcesando(false);
           return "#REF!";
         }
         
         // Reemplazar la referencia con el valor (o 0 si es vacío)
-        const valorNumerico = valorCelda ? isNaN(Number(valorCelda)) ? 0 : Number(valorCelda) : 0;
+        const valorNumerico = valorCelda ? 
+          (isNaN(Number(valorCelda)) ? 0 : Number(valorCelda)) : 0;
+        
         formula = formula.replace(refCelda, valorNumerico.toString());
       }
       
-      // Reemplazar operaciones matemáticas por funciones JavaScript
-      formula = formula.replace(/SUMA\(/gi, 'sum(');
-      formula = formula.replace(/PROMEDIO\(/gi, 'average(');
-      formula = formula.replace(/MAX\(/gi, 'max(');
-      formula = formula.replace(/MIN\(/gi, 'min(');
+      // Operaciones matemáticas básicas
+      formula = formula
+        .replace(/\+/g, " + ")
+        .replace(/-/g, " - ")
+        .replace(/\*/g, " * ")
+        .replace(/\//g, " / ");
       
-      // Agregar funciones personalizadas
-      const sum = (...args: number[]) => args.reduce((a, b) => a + b, 0);
-      const average = (...args: number[]) => args.reduce((a, b) => a + b, 0) / args.length;
-      const max = (...args: number[]) => Math.max(...args);
-      const min = (...args: number[]) => Math.min(...args);
+      // Evaluar la expresión de forma segura mediante función
+      const operarFormula = (expresion: string): number => {
+        // Dividir la expresión en tokens
+        const tokens = expresion.split(/\s+/).filter(Boolean);
+        
+        // Primero resolveremos multiplicaciones y divisiones
+        let i = 1;
+        while (i < tokens.length) {
+          if (tokens[i] === "*") {
+            const resultado = Number(tokens[i-1]) * Number(tokens[i+1]);
+            tokens.splice(i-1, 3, resultado.toString());
+            i = 1; // Volver al principio
+          } else if (tokens[i] === "/") {
+            if (Number(tokens[i+1]) === 0) {
+              throw new Error("División por cero");
+            }
+            const resultado = Number(tokens[i-1]) / Number(tokens[i+1]);
+            tokens.splice(i-1, 3, resultado.toString());
+            i = 1; // Volver al principio
+          } else {
+            i += 2;
+          }
+        }
+        
+        // Resolver sumas y restas
+        let resultado = Number(tokens[0]);
+        for (i = 1; i < tokens.length; i += 2) {
+          if (tokens[i] === "+") {
+            resultado += Number(tokens[i+1]);
+          } else if (tokens[i] === "-") {
+            resultado -= Number(tokens[i+1]);
+          }
+        }
+        
+        return resultado;
+      };
       
-      // Evaluar la fórmula con las funciones disponibles
-      const resultado = eval(formula);
-      
-      // Formatear resultado (2 decimales si es un número con decimales)
-      if (typeof resultado === 'number') {
+      try {
+        const resultado = operarFormula(formula);
+        
+        // Formatear resultado (2 decimales si es un número con decimales)
+        setProcesando(false);
+        if (isNaN(resultado)) {
+          return "#ERROR";
+        }
+        
         return resultado % 1 === 0 ? resultado.toString() : resultado.toFixed(2);
+      } catch (error) {
+        setProcesando(false);
+        return "#ERROR";
       }
       
-      return resultado?.toString() || "";
     } catch (error) {
+      setProcesando(false);
       return "#ERROR";
     }
   };
@@ -312,7 +369,7 @@ const HojaCalculo: React.FC = () => {
                       >
                         <input
                           type="text"
-                          value={indiceColumna === 0 && indiceFila === 0 ? celda : evaluados[indiceFila][indiceColumna]}
+                          value={evaluados[indiceFila]?.[indiceColumna] || ''}
                           onChange={(e) =>
                             manejarCambioCelda(
                               indiceFila,

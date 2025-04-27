@@ -1,20 +1,16 @@
 
-// Definición de tipos para el simulador de SO DOS
-
-// Tipo para procesos del sistema
 export interface Proceso {
   id: number;
   nombre: string;
-  estado: 'activo' | 'bloqueado' | 'terminado' | 'esperando';
-  memoria: number; // en MB
-  cpu: number; // porcentaje de uso
-  quantum: number; // unidades de tiempo
+  estado: 'activo' | 'bloqueado' | 'esperando' | 'terminado';
+  memoria: number;
+  cpu: number;
+  quantum: number;
   prioridad: number;
   tiempoEjecucion: number;
   tiempoEspera: number;
 }
 
-// Tipo para recursos del sistema
 export interface RecursosSistema {
   memoriaTotal: number;
   memoriaUsada: number;
@@ -24,16 +20,14 @@ export interface RecursosSistema {
   discoUsado: number;
 }
 
-// Tipo para eventos del sistema
 export interface EventoSistema {
   id: number;
-  tipo: 'interbloqueo' | 'exclusionMutua' | 'inanicion' | 'info';
+  tipo: 'info' | 'error' | 'interbloqueo' | 'exclusionMutua' | 'inanicion';
   descripcion: string;
-  proceso?: number;
   timestamp: Date;
+  proceso?: number;
 }
 
-// Tipo para aplicaciones
 export interface Aplicacion {
   id: string;
   nombre: string;
@@ -43,19 +37,16 @@ export interface Aplicacion {
   activo: boolean;
 }
 
-// Tipo para estado de la red
 export interface EstadoRed {
   conectado: boolean;
   tipo?: string;
 }
 
-// Tipo para estado de la batería
 export interface EstadoBateria {
   nivel: number;
   cargando: boolean;
 }
 
-// Tipo para usuarios del sistema
 export interface Usuario {
   id: number;
   nombre: string;

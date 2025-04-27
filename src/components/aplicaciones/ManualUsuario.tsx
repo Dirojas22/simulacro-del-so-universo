@@ -88,6 +88,19 @@ const ManualUsuario: React.FC = () => {
                 <li>Fecha y hora actual</li>
               </ul>
             </div>
+            
+            <div>
+              <h4 className="text-lg font-medium">Fondos de pantalla</h4>
+              <p>
+                DOS incluye varios fondos de pantalla organizados por categorías que puedes cambiar desde la aplicación Galería:
+              </p>
+              <ul className="list-disc list-inside ml-4">
+                <li><strong>Tecnología:</strong> Fondos relacionados con informática, circuitos y tecnología</li>
+                <li><strong>Naturaleza:</strong> Paisajes y escenas naturales</li>
+                <li><strong>Abstracto:</strong> Diseños abstractos con formas y colores</li>
+                <li><strong>Minimalista:</strong> Fondos simples y minimalistas</li>
+              </ul>
+            </div>
           </div>
           
           <h3 className="text-xl font-semibold mt-4">Consejos de uso:</h3>
@@ -140,9 +153,20 @@ const ManualUsuario: React.FC = () => {
                 Una aplicación simple para trabajar con datos tabulares:
               </p>
               <ul className="list-disc list-inside ml-4">
-                <li>Soporte para fórmulas básicas (sumas, restas, multiplicaciones)</li>
+                <li>Soporte para fórmulas básicas con el signo igual (=)</li>
+                <li>Realiza operaciones matemáticas: suma (+), resta (-), multiplicación (*), división (/)</li>
                 <li>Referencia a celdas utilizando notación estándar (A1, B2, etc.)</li>
+                <li>Ejemplos interactivos de fórmulas básicas y avanzadas</li>
                 <li>Exportación en formato CSV</li>
+              </ul>
+              <p className="mt-2">
+                <strong>Guía rápida de uso:</strong>
+              </p>
+              <ul className="list-disc list-inside ml-6">
+                <li>Para ingresar una fórmula, comienza con el símbolo igual (=)</li>
+                <li>Ejemplos: <code>=A1+B1</code>, <code>=C2*D3</code>, <code>=SUM(A1:A5)</code></li>
+                <li>Puedes hacer clic en "Tutorial" para ver ejemplos detallados</li>
+                <li>Exporta tu trabajo a CSV mediante el botón "Exportar CSV"</li>
               </ul>
             </div>
             
@@ -161,12 +185,22 @@ const ManualUsuario: React.FC = () => {
             <div>
               <h3 className="text-xl font-semibold">Navegador</h3>
               <p>
-                Un navegador web simple:
+                Un navegador web con soporte para pestañas:
               </p>
               <ul className="list-disc list-inside ml-4">
+                <li>Navegación por pestañas (abrir nuevas pestañas, cerrar pestañas)</li>
                 <li>Barra de direcciones para introducir URLs</li>
                 <li>Botones de navegación (atrás, adelante, recargar)</li>
                 <li>Visualización de páginas web (requiere conexión a internet)</li>
+              </ul>
+              <p className="mt-2">
+                <strong>Guía rápida de uso:</strong>
+              </p>
+              <ul className="list-disc list-inside ml-6">
+                <li>Haz clic en el botón + para abrir una nueva pestaña</li>
+                <li>Haz clic en X para cerrar una pestaña</li>
+                <li>Escribe una dirección web en la barra de direcciones y presiona Enter para navegar</li>
+                <li>Usa los botones de navegación para moverte entre páginas visitadas</li>
               </ul>
             </div>
             
@@ -176,9 +210,33 @@ const ManualUsuario: React.FC = () => {
                 Una herramienta para monitorear los recursos y procesos del sistema:
               </p>
               <ul className="list-disc list-inside ml-4">
-                <li>Visualización de uso de memoria, CPU y disco</li>
-                <li>Gestión de procesos con ajuste de quantum</li>
-                <li>Registro de eventos del sistema</li>
+                <li>Visualización detallada de uso de memoria, CPU, disco y red</li>
+                <li>Gestión de procesos con ajuste de quantum y prioridad</li>
+                <li>Monitoreo en tiempo real con datos dinámicos</li>
+                <li>Registro detallado de eventos del sistema</li>
+                <li>Información sobre estado de la batería y conexión a internet</li>
+              </ul>
+              <p className="mt-2">
+                <strong>Características avanzadas:</strong>
+              </p>
+              <ul className="list-disc list-inside ml-6">
+                <li>Cambiar el quantum de un proceso afecta cuánto tiempo de CPU recibe</li>
+                <li>Ajustar la prioridad determina la importancia del proceso</li>
+                <li>Terminar procesos manualmente para liberar recursos</li>
+                <li>Ver información detallada activando "Mostrar detalles"</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-xl font-semibold">Galería</h3>
+              <p>
+                Una aplicación para cambiar el fondo de pantalla del sistema:
+              </p>
+              <ul className="list-disc list-inside ml-4">
+                <li>Múltiples categorías de fondos (Tecnología, Naturaleza, Abstracto, Minimalista)</li>
+                <li>Vista previa de cada fondo</li>
+                <li>Selección con un solo clic para aplicar el fondo</li>
+                <li>Indicador visual del fondo actual</li>
               </ul>
             </div>
           </div>
@@ -200,9 +258,10 @@ const ManualUsuario: React.FC = () => {
                 El sistema monitorea continuamente el uso de recursos como:
               </p>
               <ul className="list-disc list-inside ml-4">
-                <li><strong>Memoria:</strong> Muestra la cantidad de memoria utilizada y disponible</li>
-                <li><strong>CPU:</strong> Muestra el porcentaje de uso de la CPU</li>
-                <li><strong>Disco:</strong> Muestra el espacio utilizado y disponible</li>
+                <li><strong>Memoria:</strong> Muestra la cantidad de memoria utilizada y disponible, junto con información sobre memoria caché y uso por aplicaciones</li>
+                <li><strong>CPU:</strong> Muestra el porcentaje de uso de la CPU, temperatura, frecuencia y número de núcleos</li>
+                <li><strong>Disco:</strong> Muestra el espacio utilizado y disponible, así como velocidades de lectura/escritura</li>
+                <li><strong>Red:</strong> Muestra el estado de la conexión, tipo, velocidad y latencia</li>
               </ul>
               <p className="mt-2">
                 Puedes ver estos datos en tiempo real en la aplicación Monitor del Sistema.
@@ -215,13 +274,22 @@ const ManualUsuario: React.FC = () => {
                 Cada aplicación y servicio del sistema se ejecuta como un proceso:
               </p>
               <ul className="list-disc list-inside ml-4">
-                <li><strong>Quantum:</strong> Cada proceso tiene asignado un quantum que determina cuánto tiempo de CPU recibe antes de ser interrumpido</li>
-                <li><strong>Estados:</strong> Los procesos pueden estar activos, bloqueados, esperando o terminados</li>
-                <li><strong>Prioridad:</strong> Determina la importancia relativa de cada proceso</li>
+                <li><strong>Quantum:</strong> Cada proceso tiene asignado un quantum que determina cuánto tiempo de CPU recibe antes de ser interrumpido. Puedes ajustar este valor entre 1 y 10.</li>
+                <li><strong>Estados:</strong> Los procesos pueden estar activos (verde), bloqueados (rojo), esperando (amarillo) o terminados (gris)</li>
+                <li><strong>Prioridad:</strong> Determina la importancia relativa de cada proceso, con valores del 1 al 10 (1 es la más alta)</li>
+                <li><strong>Recursos:</strong> Cada proceso consume memoria y CPU, mostrados en tiempo real</li>
+                <li><strong>Tiempo de ejecución:</strong> Indica cuánto tiempo lleva en ejecución el proceso</li>
+                <li><strong>Tiempo de espera:</strong> Indica cuánto tiempo lleva esperando recursos el proceso</li>
               </ul>
               <p className="mt-2">
-                Puedes ajustar el quantum de cada proceso en la aplicación Monitor del Sistema.
+                Puedes administrar los procesos desde la pestaña "Procesos" del Monitor del Sistema:
               </p>
+              <ul className="list-disc list-inside ml-6">
+                <li>Ajustar el quantum para dar más o menos tiempo de CPU</li>
+                <li>Cambiar la prioridad para determinar qué procesos reciben recursos primero</li>
+                <li>Terminar procesos que ya no necesites o que estén causando problemas</li>
+                <li>Ver estadísticas detalladas activando "Mostrar detalles"</li>
+              </ul>
             </div>
             
             <div>
@@ -233,6 +301,8 @@ const ManualUsuario: React.FC = () => {
                 <li><strong>Interbloqueo:</strong> Cuando dos o más procesos quedan bloqueados esperando recursos mutuamente</li>
                 <li><strong>Exclusión Mutua:</strong> Cuando se garantiza que solo un proceso acceda a un recurso compartido</li>
                 <li><strong>Inanición:</strong> Cuando un proceso no recibe los recursos necesarios durante mucho tiempo</li>
+                <li><strong>Información:</strong> Eventos generales del sistema como inicio de aplicaciones, cambios de estado, etc.</li>
+                <li><strong>Error:</strong> Problemas detectados en el sistema</li>
               </ul>
               <p className="mt-2">
                 Estos eventos se registran automáticamente y pueden verse en la pestaña de Eventos en el Monitor del Sistema.
@@ -295,12 +365,31 @@ const ManualUsuario: React.FC = () => {
                 </div>
                 
                 <div>
-                  <h4 className="text-lg font-medium">¿El navegador funciona con cualquier sitio web?</h4>
+                  <h4 className="text-lg font-medium">¿Cómo uso la hoja de cálculo?</h4>
                   <p>
-                    El navegador incluido es funcional pero tiene limitaciones de seguridad.
-                    Algunos sitios web complejos pueden no funcionar correctamente debido a
-                    restricciones del navegador embebido. Se recomienda usarlo para sitios
-                    web sencillos.
+                    Para usar fórmulas en la hoja de cálculo, empieza con el signo igual (=) seguido de una expresión matemática.
+                    Puedes hacer referencia a otras celdas usando su coordenada (por ejemplo, A1, B2).
+                    Las operaciones básicas son: suma (+), resta (-), multiplicación (*) y división (/).
+                    Consulta el tutorial incluido en la aplicación para más ejemplos.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="text-lg font-medium">¿Cómo funciona el navegador con pestañas?</h4>
+                  <p>
+                    El navegador permite abrir múltiples páginas web en pestañas. Para abrir una nueva pestaña,
+                    haz clic en el botón con el símbolo "+". Para cerrar una pestaña, haz clic en la "X" de la pestaña.
+                    Puedes navegar entre pestañas haciendo clic en ellas. Para cargar una página, escribe la URL 
+                    en la barra de direcciones y presiona Enter o haz clic en "Ir".
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="text-lg font-medium">¿Cómo cambio el fondo de pantalla?</h4>
+                  <p>
+                    Para cambiar el fondo de pantalla, abre la aplicación "Galería" desde los iconos del escritorio.
+                    Allí encontrarás fondos organizados por categorías. Simplemente haz clic en cualquiera de ellos
+                    para establecerlo como fondo de pantalla del sistema.
                   </p>
                 </div>
               </div>
@@ -326,6 +415,16 @@ const ManualUsuario: React.FC = () => {
                     Monitor del Sistema. Es posible que haya muchos procesos activos
                     consumiendo recursos. Puedes cerrar aplicaciones innecesarias o
                     ajustar el quantum de los procesos menos importantes.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="text-lg font-medium">El navegador no carga algunas páginas</h4>
+                  <p>
+                    El navegador incluido tiene limitaciones de seguridad que pueden impedir
+                    que ciertas páginas web se carguen correctamente. Algunas páginas pueden
+                    estar bloqueadas debido a restricciones de seguridad del navegador o
+                    políticas CORS. Intenta con sitios web más sencillos o básicos.
                   </p>
                 </div>
                 
@@ -367,6 +466,14 @@ const ManualUsuario: React.FC = () => {
                 
                 <div className="p-2 border-b">
                   <span className="font-semibold">E/S (Entrada/Salida):</span> Operaciones que involucran la transferencia de datos entre el sistema y dispositivos externos.
+                </div>
+                
+                <div className="p-2 border-b">
+                  <span className="font-semibold">Hilo (Thread):</span> Unidad básica de ejecución dentro de un proceso. Un proceso puede tener múltiples hilos.
+                </div>
+                
+                <div className="p-2 border-b">
+                  <span className="font-semibold">Prioridad:</span> Valor que determina la importancia de un proceso para la asignación de recursos.
                 </div>
               </div>
             </div>

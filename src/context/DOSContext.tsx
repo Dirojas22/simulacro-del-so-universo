@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, useEffect, useState } from "react";
 import { 
   Proceso, 
@@ -31,6 +32,7 @@ type DOSAction =
   | { type: 'TERMINAR_PROCESO', payload: number }
   | { type: 'BLOQUEAR_PROCESO', payload: number }
   | { type: 'ACTUALIZAR_QUANTUM', payload: { id: number, quantum: number } }
+  | { type: 'ACTUALIZAR_PROCESO', payload: { id: number, cambios: Partial<Proceso> } }
   | { type: 'REGISTRAR_EVENTO', payload: Omit<EventoSistema, 'id' | 'timestamp'> }
   | { type: 'ACTUALIZAR_RECURSOS', payload: Partial<RecursosSistema> }
   | { type: 'ABRIR_APLICACION', payload: Aplicacion }
@@ -57,12 +59,44 @@ const aplicacionesDisponibles: Omit<Aplicacion, 'esMinimizado' | 'activo'>[] = [
   { id: 'galeria', nombre: 'Galería', icono: 'image', componente: 'Galeria' },
 ];
 
-const fondosDisponibles = [
-  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80",
-  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-  "https://images.unsplash.com/photo-1484950763426-56b5bf172dbb?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-  "https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=2072&q=80"
+// Categorías de fondos de pantalla
+const categorias = [
+  { id: "tecnologia", nombre: "Tecnología" },
+  { id: "naturaleza", nombre: "Naturaleza" },
+  { id: "abstracto", nombre: "Abstracto" },
+  { id: "minimalista", nombre: "Minimalista" }
 ];
+
+const fondosDisponibles = {
+  tecnologia: [
+    "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80",
+    "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1484950763426-56b5bf172dbb?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=2072&q=80",
+    "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+  ],
+  naturaleza: [
+    "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?ixlib=rb-4.0.3&auto=format&fit=crop&w=2274&q=80",
+    "https://images.unsplash.com/photo-1501854140801-50d01698950b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2275&q=80",
+    "https://images.unsplash.com/photo-1426604966848-d7adac402bff?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1505765050516-f72dcac9c60e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+  ],
+  abstracto: [
+    "https://images.unsplash.com/photo-1541701494587-cb58502866ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2068&q=80",
+    "https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?ixlib=rb-4.0.3&auto=format&fit=crop&w=2080&q=80",
+    "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+  ],
+  minimalista: [
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2073&q=80",
+    "https://images.unsplash.com/photo-1496347646636-ea47f7d6b37b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=2074&q=80",
+    "https://images.unsplash.com/photo-1534447677768-be436bb09401?ixlib=rb-4.0.3&auto=format&fit=crop&w=2094&q=80",
+    "https://images.unsplash.com/photo-1498550744921-75f79806b8a7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80"
+  ]
+};
 
 // Lista de usuarios predefinidos
 const usuariosDisponibles: Usuario[] = [
@@ -127,7 +161,7 @@ const initialState: DOSState = {
   },
   volumen: 50,
   isLoggedIn: false,
-  fondoActual: fondosDisponibles[0],
+  fondoActual: fondosDisponibles.tecnologia[0],
   usuarioActual: null,
   usuarios: usuariosDisponibles,
 };
@@ -182,6 +216,16 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
           p.id === action.payload.id ? { ...p, quantum: action.payload.quantum } : p
         ),
       };
+    
+    case 'ACTUALIZAR_PROCESO': {
+      const { id, cambios } = action.payload;
+      return {
+        ...state,
+        procesos: state.procesos.map(p => 
+          p.id === id ? { ...p, ...cambios } : p
+        ),
+      };
+    }
     
     case 'REGISTRAR_EVENTO':
       return {
@@ -610,6 +654,18 @@ export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (proceso.estado === 'activo') {
           const nuevoTiempoEjecucion = proceso.tiempoEjecucion + 1;
           
+          dispatch({
+            type: 'ACTUALIZAR_PROCESO',
+            payload: {
+              id: proceso.id,
+              cambios: {
+                tiempoEjecucion: nuevoTiempoEjecucion,
+                // Simular pequeñas fluctuaciones en el uso de CPU
+                cpu: Math.max(0.1, Math.min(proceso.cpu + (Math.random() * 0.6 - 0.3), 100))
+              }
+            }
+          });
+          
           // Simulación básica de planificación por quantum
           if (nuevoTiempoEjecucion % proceso.quantum === 0) {
             // El proceso ha consumido su quantum, podría bloquearse
@@ -632,14 +688,26 @@ export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else if (proceso.estado === 'esperando' || proceso.estado === 'bloqueado') {
           const nuevoTiempoEspera = proceso.tiempoEspera + 1;
           
+          dispatch({
+            type: 'ACTUALIZAR_PROCESO',
+            payload: {
+              id: proceso.id,
+              cambios: {
+                tiempoEspera: nuevoTiempoEspera
+              }
+            }
+          });
+          
           // Posibilidad de desbloquear procesos
           if (proceso.estado === 'bloqueado' && Math.random() < 0.2) { // 20% de probabilidad
             dispatch({
-              type: 'INICIAR_PROCESO',
+              type: 'ACTUALIZAR_PROCESO',
               payload: {
-                ...proceso,
-                estado: 'activo',
-                tiempoEspera: nuevoTiempoEspera,
+                id: proceso.id,
+                cambios: {
+                  estado: 'activo',
+                  tiempoEspera: nuevoTiempoEspera
+                }
               }
             });
             

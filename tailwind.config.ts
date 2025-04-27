@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -28,6 +27,13 @@ export default {
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))'
+				},
+				dos: {
+					'blue': '#1a1f2c',
+					'green': '#4ade80',
+					'gray': '#8E9196',
+					'light-gray': '#f5f5f5',
+					'dark-blue': '#151923',
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -62,20 +68,7 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				},
-        // OS simulator theme colors
-        os: {
-          'desktop': '#1E2433',
-          'taskbar': '#1A1F2C',
-          'window': '#2A303C',
-          'window-header': '#353C4A',
-          'accent': '#0EA5E9',
-          'text-primary': '#FFFFFF',
-          'text-secondary': '#9F9EA1',
-          'icon': '#8B5CF6',
-          'border': '#3A4050',
-          'shadow': '#00000040'
-        }
+				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -98,38 +91,11 @@ export default {
 					to: {
 						height: '0'
 					}
-				},
-        'window-open': {
-          '0%': { 
-            opacity: '0', 
-            transform: 'scale(0.95)'
-          },
-          '100%': { 
-            opacity: '1',
-            transform: 'scale(1)' 
-          }
-        },
-        'window-close': {
-          '0%': { 
-            opacity: '1',
-            transform: 'scale(1)' 
-          },
-          '100%': { 
-            opacity: '0', 
-            transform: 'scale(0.95)'
-          }
-        },
-        'fade-in': {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' }
-        }
+				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-        'window-open': 'window-open 0.2s ease-out',
-        'window-close': 'window-close 0.2s ease-out',
-        'fade-in': 'fade-in 0.3s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out'
 			}
 		}
 	},

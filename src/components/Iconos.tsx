@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useDOS } from "@/context/DOSContext";
 import { 
@@ -18,7 +17,8 @@ import {
   BookOpen,
   Images,
   FileSearch,
-  MonitorSmartphone
+  MonitorSmartphone,
+  Activity
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
@@ -26,7 +26,6 @@ import { motion } from "framer-motion";
 const Iconos: React.FC = () => {
   const { aplicacionesDisponibles, abrirAplicacion } = useDOS();
   
-  // Renderizar icono según el tipo
   const renderIcono = (tipo: string) => {
     switch (tipo) {
       case "calculator":
@@ -46,7 +45,7 @@ const Iconos: React.FC = () => {
       case "database":
         return <Database size={32} className="text-cyan-400" />;
       case "monitor":
-        return <MonitorSmartphone size={32} className="text-emerald-400" />;
+        return <Activity size={32} className="text-emerald-400" />;
       case "layout":
         return <Layout size={32} className="text-indigo-400" />;
       case "users":
@@ -56,7 +55,7 @@ const Iconos: React.FC = () => {
       case "settings":
         return <Settings size={32} className="text-gray-400" />;
       case "manual":
-        return <FileSearch size={32} className="text-teal-400" />;
+        return <BookOpen size={32} className="text-teal-400" />;
       case "gallery":
         return <Images size={32} className="text-violet-400" />;
       default:
@@ -85,7 +84,6 @@ const Iconos: React.FC = () => {
         ))}
       </div>
       
-      {/* DOS Menu Button - Fixed position, no animations except hover */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button 

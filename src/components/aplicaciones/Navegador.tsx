@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,35 +19,33 @@ const generarTabId = (): string => {
 const Navegador: React.FC = () => {
   const { state } = useDOS();
   const [tabs, setTabs] = useState<Tab[]>([
-    { id: "tab1", url: "https://www.google.com", title: "Google", loading: false }
+    { id: "tab1", url: "https://www.baidu.com", title: "Baidu", loading: false }
   ]);
   const [activeTabId, setActiveTabId] = useState("tab1");
-  const [inputUrl, setInputUrl] = useState("https://www.google.com");
+  const [inputUrl, setInputUrl] = useState("https://www.baidu.com");
   const iframeRefs = useRef<{ [key: string]: HTMLIFrameElement | null }>({});
 
   const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0];
 
   const agregarTab = () => {
     const newId = generarTabId();
-    const newTab = { id: newId, url: "https://www.google.com", title: "Nueva pestaña", loading: false };
+    const newTab = { id: newId, url: "https://www.baidu.com", title: "Nueva pestaña", loading: false };
     setTabs([...tabs, newTab]);
     setActiveTabId(newId);
-    setInputUrl("https://www.google.com");
+    setInputUrl("https://www.baidu.com");
   };
 
   const cerrarTab = (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (tabs.length === 1) {
-      // Si es la última pestaña, crear una nueva antes de cerrar
       const newId = generarTabId();
-      setTabs([{ id: newId, url: "https://www.google.com", title: "Nueva pestaña", loading: false }]);
+      setTabs([{ id: newId, url: "https://www.baidu.com", title: "Nueva pestaña", loading: false }]);
       setActiveTabId(newId);
-      setInputUrl("https://www.google.com");
+      setInputUrl("https://www.baidu.com");
     } else {
       const tabIndex = tabs.findIndex(tab => tab.id === id);
       const newTabs = tabs.filter(tab => tab.id !== id);
       
-      // Si cerramos la pestaña activa, activar la siguiente o la anterior
       if (id === activeTabId) {
         const newActiveIndex = tabIndex === tabs.length - 1 ? tabIndex - 1 : tabIndex;
         setActiveTabId(newTabs[newActiveIndex].id);
@@ -79,7 +76,6 @@ const Navegador: React.FC = () => {
       setInputUrl(urlFinal);
     }
 
-    // Actualizar el estado de la pestaña activa
     setTabs(prevTabs => 
       prevTabs.map(tab => 
         tab.id === tabId 
@@ -88,7 +84,6 @@ const Navegador: React.FC = () => {
       )
     );
     
-    // Configurar el sandbox del iframe
     if (iframeRefs.current[tabId]) {
       try {
         const iframe = iframeRefs.current[tabId];
@@ -113,7 +108,6 @@ const Navegador: React.FC = () => {
         )
       );
 
-      // Actualizar el título basado en la URL
       const dominio = new URL(urlFinal).hostname;
       setTabs(prevTabs => 
         prevTabs.map(tab => 
@@ -125,7 +119,6 @@ const Navegador: React.FC = () => {
     }, 1000);
   };
 
-  // Navegar cuando se presiona Enter
   const manejarTecla = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       navegar();
@@ -165,7 +158,6 @@ const Navegador: React.FC = () => {
     const iframe = iframeRefs.current[activeTabId];
     if (iframe) {
       try {
-        // @ts-ignore - No es estándar pero funciona en muchos navegadores
         iframe.contentWindow.history.back();
       } catch (error) {
         console.error("No se pudo navegar hacia atrás:", error);
@@ -177,7 +169,6 @@ const Navegador: React.FC = () => {
     const iframe = iframeRefs.current[activeTabId];
     if (iframe) {
       try {
-        // @ts-ignore - No es estándar pero funciona en muchos navegadores
         iframe.contentWindow.history.forward();
       } catch (error) {
         console.error("No se pudo navegar hacia adelante:", error);
@@ -187,9 +178,7 @@ const Navegador: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Barra de navegación */}
       <div className="flex flex-col bg-gray-100 border-b">
-        {/* Tabs de navegación */}
         <div className="flex items-center h-9 overflow-x-auto">
           {tabs.map((tab) => (
             <div
@@ -218,7 +207,6 @@ const Navegador: React.FC = () => {
           </button>
         </div>
         
-        {/* Controles de navegación */}
         <div className="flex items-center p-2">
           <Button 
             variant="outline" 
@@ -269,7 +257,6 @@ const Navegador: React.FC = () => {
         </div>
       </div>
       
-      {/* Contenido del navegador */}
       <div className="flex-1 relative bg-white">
         {!state.estadoRed.conectado && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">

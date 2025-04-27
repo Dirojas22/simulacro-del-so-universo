@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useEffect, useState } from "react";
 import { 
   Proceso, 
@@ -73,7 +72,7 @@ const fondosDisponibles = {
     "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
     "https://images.unsplash.com/photo-1484950763426-56b5bf172dbb?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
     "https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=2072&q=80",
-    "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+    "https://images.unsplash.com/photo-1607252650355-f7fd0460b37b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
   ],
   naturaleza: [
     "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?ixlib=rb-4.0.3&auto=format&fit=crop&w=2274&q=80",
@@ -184,6 +183,9 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
       const proceso = state.procesos.find(p => p.id === action.payload);
       if (!proceso) return state;
       
+      // Find the associated application
+      const appProceso = state.aplicacionesAbiertas.find(app => app.nombre === proceso.nombre);
+      
       return {
         ...state,
         procesos: state.procesos.map(p => 
@@ -192,8 +194,15 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
         recursos: {
           ...state.recursos,
           memoriaUsada: state.recursos.memoriaUsada - proceso.memoria,
-          cpuUsada: state.recursos.cpuUsada - proceso.cpu,
+          cpuUsada: Math.max(0, state.recursos.cpuUsada - proceso.cpu),
         },
+        // Close the associated application if found
+        aplicacionesAbiertas: appProceso 
+          ? state.aplicacionesAbiertas.filter(app => app.id !== appProceso.id)
+          : state.aplicacionesAbiertas,
+        aplicacionActiva: appProceso?.id === state.aplicacionActiva 
+          ? null 
+          : state.aplicacionActiva
       };
     }
     
@@ -250,7 +259,7 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
       };
     
     case 'ABRIR_APLICACION': {
-      // Si la aplicación ya está abierta, solo la activamos
+      // If the application is already open, just activate it
       if (state.aplicacionesAbiertas.some(app => app.id === action.payload.id)) {
         return {
           ...state,
@@ -263,6 +272,22 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
         };
       }
       
+      // Create a new process ID
+      const nuevoProcesoId = Math.max(...state.procesos.map(p => p.id), 0) + 1;
+      
+      // Create a new process for the application
+      const nuevoProceso = {
+        id: nuevoProcesoId,
+        nombre: action.payload.nombre,
+        estado: 'activo',
+        memoria: Math.floor(Math.random() * 50) + 20, // 20-70 MB
+        cpu: Math.floor(Math.random() * 5) + 1, // 1-5%
+        quantum: 2,
+        prioridad: 5,
+        tiempoEjecucion: 0,
+        tiempoEspera: 0,
+      };
+      
       return {
         ...state,
         aplicacionesAbiertas: [
@@ -270,6 +295,12 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
           { ...action.payload, esMinimizado: false, activo: true }
         ],
         aplicacionActiva: action.payload.id,
+        procesos: [...state.procesos, nuevoProceso],
+        recursos: {
+          ...state.recursos,
+          memoriaUsada: state.recursos.memoriaUsada + nuevoProceso.memoria,
+          cpuUsada: state.recursos.cpuUsada + nuevoProceso.cpu,
+        },
       };
     }
     
@@ -420,7 +451,7 @@ export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
       
-      // Crear un proceso para la aplicación
+      // Create a new process for the application
       const nuevoId = Math.max(...state.procesos.map(p => p.id)) + 1;
       dispatch({
         type: 'INICIAR_PROCESO',

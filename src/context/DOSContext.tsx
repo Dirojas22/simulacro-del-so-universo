@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, useEffect, useState } from "react";
 import { 
   Proceso, 
@@ -249,58 +250,27 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
       };
     
     case 'ABRIR_APLICACION': {
-      // Check if app is already open
+      // Si la aplicación ya está abierta, solo la activamos
       if (state.aplicacionesAbiertas.some(app => app.id === action.payload.id)) {
-        dispatch({ 
-          type: 'ACTIVAR_APLICACION', 
-          payload: action.payload.id 
-        });
-        return;
+        return {
+          ...state,
+          aplicacionesAbiertas: state.aplicacionesAbiertas.map(app => 
+            app.id === action.payload.id 
+              ? { ...app, esMinimizado: false, activo: true }
+              : { ...app, activo: false }
+          ),
+          aplicacionActiva: action.payload.id,
+        };
       }
       
-      dispatch({ 
-        type: 'ABRIR_APLICACION', 
-        payload: { ...action.payload, esMinimizado: false, activo: true } 
-      });
-      
-      // Create a process for the application with more realistic resource usage
-      const nuevoId = Math.max(...state.procesos.map(p => p.id)) + 1;
-      const baseMemory = {
-        'calculadora': 24,
-        'editor': 32,
-        'hoja-calculo': 48,
-        'paint': 64,
-        'navegador': 128,
-        'sistema': 42,
-        'manual': 28,
-        'galeria': 56
-      }[action.payload.id] || 32;
-
-      const baseCpu = {
-        'calculadora': 1,
-        'editor': 2,
-        'hoja-calculo': 4,
-        'paint': 5,
-        'navegador': 8,
-        'sistema': 3,
-        'manual': 1,
-        'galeria': 3
-      }[action.payload.id] || 2;
-
-      dispatch({
-        type: 'INICIAR_PROCESO',
-        payload: {
-          id: nuevoId,
-          nombre: action.payload.nombre,
-          estado: 'activo',
-          memoria: baseMemory + Math.floor(Math.random() * 20),
-          cpu: baseCpu + Math.random() * 2,
-          quantum: Math.floor(Math.random() * 3) + 2,
-          prioridad: Math.floor(Math.random() * 5) + 1,
-          tiempoEjecucion: 0,
-          tiempoEspera: 0,
-        }
-      });
+      return {
+        ...state,
+        aplicacionesAbiertas: [
+          ...state.aplicacionesAbiertas.map(app => ({ ...app, activo: false })),
+          { ...action.payload, esMinimizado: false, activo: true }
+        ],
+        aplicacionActiva: action.payload.id,
+      };
     }
     
     case 'CERRAR_APLICACION':
@@ -432,97 +402,77 @@ export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [state, dispatch] = useReducer(dosReducer, initialState);
   const [onlineStatus, setOnlineStatus] = useState(navigator.onLine);
   
+  // Función para abrir una aplicación
   const abrirAplicacion = (id: string) => {
     const appInfo = aplicacionesDisponibles.find(app => app.id === id);
     if (appInfo) {
-      // Check if app is already open
-      if (state.aplicacionesAbiertas.some(app => app.id === id)) {
-        dispatch({ 
-          type: 'ACTIVAR_APLICACION', 
-          payload: id 
-        });
-        return;
-      }
-
       dispatch({ 
         type: 'ABRIR_APLICACION', 
         payload: { ...appInfo, esMinimizado: false, activo: true } 
       });
       
-      // Create a process for the application with more realistic resource usage
+      // Registrar evento
+      dispatch({
+        type: 'REGISTRAR_EVENTO',
+        payload: {
+          tipo: 'info',
+          descripcion: `Aplicación iniciada: ${appInfo.nombre}`,
+        }
+      });
+      
+      // Crear un proceso para la aplicación
       const nuevoId = Math.max(...state.procesos.map(p => p.id)) + 1;
-      const baseMemory = {
-        'calculadora': 24,
-        'editor': 32,
-        'hoja-calculo': 48,
-        'paint': 64,
-        'navegador': 128,
-        'sistema': 42,
-        'manual': 28,
-        'galeria': 56
-      }[id] || 32;
-
-      const baseCpu = {
-        'calculadora': 1,
-        'editor': 2,
-        'hoja-calculo': 4,
-        'paint': 5,
-        'navegador': 8,
-        'sistema': 3,
-        'manual': 1,
-        'galeria': 3
-      }[id] || 2;
-
       dispatch({
         type: 'INICIAR_PROCESO',
         payload: {
           id: nuevoId,
           nombre: appInfo.nombre,
           estado: 'activo',
-          memoria: baseMemory + Math.floor(Math.random() * 20),
-          cpu: baseCpu + Math.random() * 2,
-          quantum: Math.floor(Math.random() * 3) + 2,
-          prioridad: Math.floor(Math.random() * 5) + 1,
+          memoria: Math.floor(Math.random() * 50) + 20, // 20-70 MB
+          cpu: Math.floor(Math.random() * 5) + 1, // 1-5%
+          quantum: 2,
+          prioridad: 5,
           tiempoEjecucion: 0,
           tiempoEspera: 0,
         }
       });
     }
   };
-
+  
+  // Función para cerrar una aplicación
   const cerrarAplicacion = (id: string) => {
     const app = state.aplicacionesAbiertas.find(app => app.id === id);
     if (app) {
       dispatch({ type: 'CERRAR_APLICACION', payload: id });
       
-      // Find and terminate the process
-      const proceso = state.procesos.find(p => 
-        p.nombre === app.nombre && p.estado === 'activo'
-      );
+      // Registrar evento
+      dispatch({
+        type: 'REGISTRAR_EVENTO',
+        payload: {
+          tipo: 'info',
+          descripcion: `Aplicación cerrada: ${app.nombre}`,
+        }
+      });
       
+      // Terminar el proceso asociado
+      const proceso = state.procesos.find(p => p.nombre === app.nombre && p.estado === 'activo');
       if (proceso) {
         dispatch({ type: 'TERMINAR_PROCESO', payload: proceso.id });
-        
-        dispatch({
-          type: 'REGISTRAR_EVENTO',
-          payload: {
-            tipo: 'info',
-            descripcion: `Proceso terminado: ${app.nombre}`,
-            proceso: proceso.id
-          }
-        });
       }
     }
   };
-
+  
+  // Función para minimizar una aplicación
   const minimizarAplicacion = (id: string) => {
     dispatch({ type: 'MINIMIZAR_APLICACION', payload: id });
   };
-
+  
+  // Función para activar una aplicación
   const activarAplicacion = (id: string) => {
     dispatch({ type: 'ACTIVAR_APLICACION', payload: id });
   };
-
+  
+  // Efecto para monitorear el estado de la conexión
   useEffect(() => {
     const handleOnline = () => {
       setOnlineStatus(true);
@@ -570,7 +520,8 @@ export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
+  
+  // Efecto para simular la batería
   useEffect(() => {
     // Solo en navegadores que soportan la API de batería
     if ('getBattery' in navigator) {
@@ -642,7 +593,8 @@ export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }
   }, []);
-
+  
+  // Simular cambios en los recursos del sistema
   useEffect(() => {
     const intervalId = setInterval(() => {
       // Simular fluctuaciones en el uso de CPU y memoria
@@ -775,7 +727,7 @@ export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     return () => clearInterval(intervalId);
   }, [state.procesos, state.recursos]);
-
+  
   const value = {
     state,
     dispatch,
@@ -785,10 +737,11 @@ export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     activarAplicacion,
     aplicacionesDisponibles,
   };
-
+  
   return <DOSContext.Provider value={value}>{children}</DOSContext.Provider>;
 };
 
+// Hook personalizado para usar el contexto
 export const useDOS = () => {
   const context = useContext(DOSContext);
   if (context === undefined) {

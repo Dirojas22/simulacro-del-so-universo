@@ -1,26 +1,41 @@
-
 import React, { useState, useEffect } from "react";
 import { useDOS } from "@/context/DOSContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Activity, AlertTriangle, Check, Info, Trash } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Activity, AlertTriangle, Check } from "lucide-react";
 
 const MonitorSistema: React.FC = () => {
   const { state, dispatch } = useDOS();
   const [mostrarDetalle, setMostrarDetalle] = useState(false);
   const [valorRefresh, setValorRefresh] = useState(0);
   
-  // Actualizar los valores cada 2 segundos para simular un sistema más dinámico
   useEffect(() => {
     const interval = setInterval(() => {
       setValorRefresh(prev => prev + 1);
+      
+      // Simular cambios aleatorios solo en procesos activos
+      state.procesos
+        .filter(proceso => proceso.estado === 'activo')
+        .forEach(proceso => {
+          const cpuDelta = Math.random() * 4 - 1.5; // -1.5 a +2.5
+          const memoriaDelta = Math.floor(Math.random() * 8) - 3; // -3 a +5
+          
+          dispatch({
+            type: 'ACTUALIZAR_PROCESO',
+            payload: {
+              id: proceso.id,
+              cambios: {
+                cpu: Math.max(0.1, Math.min(proceso.cpu + cpuDelta, 100)),
+                memoria: Math.max(1, Math.min(proceso.memoria + memoriaDelta, 512))
+              }
+            }
+          });
+      });
     }, 2000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [dispatch, state.procesos]);
   
   // Función para actualizar el quantum de un proceso
   const actualizarQuantum = (id: number, nuevoQuantum: number) => {
@@ -39,11 +54,6 @@ const MonitorSistema: React.FC = () => {
         cambios: { prioridad: nuevaPrioridad }
       }
     });
-  };
-  
-  // Función para terminar un proceso
-  const terminarProceso = (id: number) => {
-    dispatch({ type: "TERMINAR_PROCESO", payload: id });
   };
   
   // Función para obtener un color basado en el valor de carga (rojo = alto, verde = bajo)
@@ -66,21 +76,6 @@ const MonitorSistema: React.FC = () => {
     const random = (Math.random() * factor) - (factor / 2);
     return Math.max(min, Math.min(max, baseValue + random));
   };
-
-  // Función para obtener un tooltip para un proceso
-  const getProcessTooltip = (proceso: any) => {
-    if (proceso.cpu > 70) {
-      return "¡Este proceso está usando mucha CPU! ¿Quieres terminarlo?";
-    } else if (proceso.memoria > 400) {
-      return "¡Este proceso está usando mucha memoria! ¿Quieres terminarlo?";
-    } else if (proceso.estado === "bloqueado") {
-      return "Este proceso está bloqueado esperando recursos";
-    } else if (proceso.nombre === "Sistema" || proceso.nombre === "Kernel") {
-      return "Los procesos del sistema no pueden ser terminados";
-    } else {
-      return `PID: ${proceso.pid} - Tiempo de ejecución: ${proceso.tiempoEjecucion}s`;
-    }
-  };
   
   return (
     <div className="h-full flex flex-col p-4 bg-gray-50">
@@ -102,12 +97,7 @@ const MonitorSistema: React.FC = () => {
         {/* Tab de Recursos */}
         <TabsContent value="recursos" className="h-full">
           <div className="grid gap-4">
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white p-4 rounded-lg shadow-sm"
-            >
+            <div className="bg-white p-4 rounded-lg shadow-sm">
               <h3 className="text-lg font-semibold mb-2">Memoria</h3>
               <div className="flex items-center justify-between mb-2">
                 <span>Uso de memoria:</span>
@@ -138,14 +128,9 @@ const MonitorSistema: React.FC = () => {
                   <p className="font-medium">{Math.floor(state.recursos.memoriaUsada * 0.6).toFixed(0)} MB</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
             
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="bg-white p-4 rounded-lg shadow-sm"
-            >
+            <div className="bg-white p-4 rounded-lg shadow-sm">
               <h3 className="text-lg font-semibold mb-2">CPU</h3>
               <div className="flex items-center justify-between mb-2">
                 <span>Uso de CPU:</span>
@@ -167,7 +152,7 @@ const MonitorSistema: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-gray-600">Procesos:</p>
-                  <p className="font-medium">{state.procesosSistema.filter(p => p.estado === 'activo').length} activos</p>
+                  <p className="font-medium">{state.procesos.filter(p => p.estado === 'activo').length} activos</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Temperatura:</p>
@@ -176,14 +161,9 @@ const MonitorSistema: React.FC = () => {
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </div>
             
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              className="bg-white p-4 rounded-lg shadow-sm"
-            >
+            <div className="bg-white p-4 rounded-lg shadow-sm">
               <h3 className="text-lg font-semibold mb-2">Disco</h3>
               <div className="flex items-center justify-between mb-2">
                 <span>Uso de disco:</span>
@@ -212,14 +192,9 @@ const MonitorSistema: React.FC = () => {
                   <p className="font-medium">SSD NVMe</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
             
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.3 }}
-              className="bg-white p-4 rounded-lg shadow-sm"
-            >
+            <div className="bg-white p-4 rounded-lg shadow-sm">
               <h3 className="text-lg font-semibold mb-2">Red</h3>
               <div className="flex items-center gap-2 mb-2">
                 <div className={`h-3 w-3 rounded-full ${state.estadoRed.conectado ? 'bg-green-500' : 'bg-red-500'}`}></div>
@@ -246,14 +221,9 @@ const MonitorSistema: React.FC = () => {
                   </div>
                 </div>
               )}
-            </motion.div>
+            </div>
             
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.4 }}
-              className="bg-white p-4 rounded-lg shadow-sm"
-            >
+            <div className="bg-white p-4 rounded-lg shadow-sm">
               <h3 className="text-lg font-semibold mb-2">Batería</h3>
               <div className="flex items-center gap-2 mb-2">
                 <div className={`h-3 w-3 rounded-full ${state.estadoBateria.cargando ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
@@ -273,7 +243,7 @@ const MonitorSistema: React.FC = () => {
               ) : (
                 <p className="text-sm text-gray-600 mt-2">Tiempo restante estimado: {Math.floor(1 + Math.random() * 4)} horas {Math.floor(Math.random() * 60)} minutos</p>
               )}
-            </motion.div>
+            </div>
           </div>
         </TabsContent>
         
@@ -284,7 +254,7 @@ const MonitorSistema: React.FC = () => {
               <div className="flex gap-2 items-center">
                 <h3 className="text-lg font-semibold">Procesos activos: </h3>
                 <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                  {state.procesosSistema.filter(p => p.estado !== 'terminado').length}
+                  {state.procesos.filter(p => p.estado !== 'terminado').length}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -300,7 +270,7 @@ const MonitorSistema: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">PID</TableHead>
+                  <TableHead className="w-12">ID</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>CPU</TableHead>
@@ -319,158 +289,94 @@ const MonitorSistema: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <AnimatePresence>
-                  {state.procesosSistema
-                    .filter(proceso => proceso.estado !== 'terminado')
-                    .map((proceso) => (
-                      <motion.tr
-                        key={proceso.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.3 }}
-                        className={
-                          proceso.estado === 'bloqueado' ? 'bg-red-50' :
-                          proceso.estado === 'esperando' ? 'bg-yellow-50' :
-                          proceso.estado === 'activo' ? 'bg-green-50' : ''
-                        }
-                      >
-                        <TableCell>{proceso.pid || 'N/A'}</TableCell>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {proceso.estado === 'activo' && (
-                              <span className="flex h-2 w-2 relative">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                              </span>
-                            )}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="cursor-help">{proceso.nombre}</span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{getProcessTooltip(proceso)}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
-                            ${proceso.estado === 'activo' ? 'bg-green-100 text-green-800' :
-                              proceso.estado === 'bloqueado' ? 'bg-red-100 text-red-800' :
-                              'bg-yellow-100 text-yellow-800'
-                            }`}
-                          >
-                            {proceso.estado === 'activo' && <Check className="h-3 w-3" />}
-                            {proceso.estado === 'bloqueado' && <AlertTriangle className="h-3 w-3" />}
-                            {proceso.estado === 'esperando' && <Activity className="h-3 w-3" />}
-                            {proceso.estado}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1">
-                                  <Progress value={proceso.cpu} className="h-1.5 w-16" />
-                                  <span className={getColorForValue(proceso.cpu)}>{proceso.cpu.toFixed(1)}%</span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {proceso.cpu > 70 ? (
-                                  <p className="text-red-500">¡Alto consumo de CPU!</p>
-                                ) : (
-                                  <p>Consumo normal</p>
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </TableCell>
-                        <TableCell>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1">
-                                  <Progress value={(proceso.memoria / 512) * 100} className="h-1.5 w-16" />
-                                  <span>{proceso.memoria} MB</span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {proceso.memoria > 400 ? (
-                                  <p className="text-red-500">¡Alto consumo de memoria!</p>
-                                ) : (
-                                  <p>Consumo normal</p>
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </TableCell>
-                        <TableCell>
-                          <select 
-                            value={proceso.quantum}
-                            onChange={(e) => actualizarQuantum(proceso.id, parseInt(e.target.value))}
-                            className="p-1 border rounded"
-                            disabled={proceso.estado === 'terminado' || proceso.nombre === "Sistema" || proceso.nombre === "Kernel"}
-                          >
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((q) => (
-                              <option key={q} value={q}>{q}</option>
-                            ))}
-                          </select>
-                        </TableCell>
-                        {mostrarDetalle && (
-                          <>
-                            <TableCell>
-                              <select 
-                                value={proceso.prioridad}
-                                onChange={(e) => cambiarPrioridad(proceso.id, parseInt(e.target.value))}
-                                className="p-1 border rounded"
-                                disabled={proceso.estado === 'terminado' || proceso.nombre === "Sistema" || proceso.nombre === "Kernel"}
-                              >
-                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((p) => (
-                                  <option key={p} value={p}>{p}</option>
-                                ))}
-                              </select>
-                            </TableCell>
-                            <TableCell>{proceso.tiempoEjecucion}s</TableCell>
-                            <TableCell>{proceso.tiempoEspera}s</TableCell>
-                            <TableCell>
-                              {Math.floor(getRelatedRandomValue(proceso.cpu, 20, 0, 100))}%
-                            </TableCell>
-                            <TableCell>
-                              {Math.max(1, Math.floor(proceso.memoria / 32))}
-                            </TableCell>
-                          </>
-                        )}
-                        <TableCell>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                                    proceso.nombre === "Sistema" || proceso.nombre === "Kernel"
-                                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                      : "bg-red-100 text-red-600 hover:bg-red-200"
-                                  }`}
-                                  onClick={() => terminarProceso(proceso.id)}
-                                  disabled={proceso.nombre === "Sistema" || proceso.nombre === "Kernel"}
-                                >
-                                  <Trash className="h-3 w-3" />
-                                  Terminar
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {proceso.nombre === "Sistema" || proceso.nombre === "Kernel"
-                                  ? "Los procesos del sistema no pueden terminarse"
-                                  : "Terminar este proceso y liberar sus recursos"}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </TableCell>
-                      </motion.tr>
-                    ))}
-                </AnimatePresence>
+                {state.procesos
+                  .filter(proceso => proceso.estado !== 'terminado')
+                  .map((proceso) => (
+                    <TableRow key={proceso.id} className={
+                      proceso.estado === 'bloqueado' ? 'bg-red-50' :
+                      proceso.estado === 'esperando' ? 'bg-yellow-50' :
+                      proceso.estado === 'activo' ? 'bg-green-50' : ''
+                    }>
+                      <TableCell>{proceso.id}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {proceso.estado === 'activo' && (
+                            <span className="flex h-2 w-2 relative">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                          )}
+                          {proceso.nombre}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+                          ${proceso.estado === 'activo' ? 'bg-green-100 text-green-800' :
+                            proceso.estado === 'bloqueado' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {proceso.estado}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Progress value={proceso.cpu} className="h-1.5 w-16" />
+                          <span className={getColorForValue(proceso.cpu)}>{proceso.cpu.toFixed(1)}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Progress value={(proceso.memoria / 512) * 100} className="h-1.5 w-16" />
+                          <span>{proceso.memoria} MB</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <select 
+                          value={proceso.quantum}
+                          onChange={(e) => actualizarQuantum(proceso.id, parseInt(e.target.value))}
+                          className="p-1 border rounded"
+                          disabled={proceso.estado === 'terminado'}
+                        >
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((q) => (
+                            <option key={q} value={q}>{q}</option>
+                          ))}
+                        </select>
+                      </TableCell>
+                      {mostrarDetalle && (
+                        <>
+                          <TableCell>
+                            <select 
+                              value={proceso.prioridad}
+                              onChange={(e) => cambiarPrioridad(proceso.id, parseInt(e.target.value))}
+                              className="p-1 border rounded"
+                              disabled={proceso.estado === 'terminado'}
+                            >
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((p) => (
+                                <option key={p} value={p}>{p}</option>
+                              ))}
+                            </select>
+                          </TableCell>
+                          <TableCell>{proceso.tiempoEjecucion}s</TableCell>
+                          <TableCell>{proceso.tiempoEspera}s</TableCell>
+                          <TableCell>
+                            {Math.floor(getRelatedRandomValue(proceso.cpu, 20, 0, 100))}%
+                          </TableCell>
+                          <TableCell>
+                            {Math.max(1, Math.floor(proceso.memoria / 32))}
+                          </TableCell>
+                        </>
+                      )}
+                      <TableCell>
+                        <button
+                          className="text-xs px-2 py-1 bg-red-100 text-red-600 hover:bg-red-200 rounded"
+                          onClick={() => dispatch({ type: 'TERMINAR_PROCESO', payload: proceso.id })}
+                        >
+                          Terminar
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </div>
@@ -492,51 +398,42 @@ const MonitorSistema: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <AnimatePresence>
-                  {state.eventos.slice().reverse().map((evento) => {
-                    const proceso = evento.proceso 
-                      ? state.procesosSistema.find(p => p.id === evento.proceso) 
-                      : undefined;
-                    
-                    return (
-                      <motion.tr
-                        key={evento.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <TableCell>{evento.id}</TableCell>
-                        <TableCell>
-                          <span 
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
-                              ${evento.tipo === 'interbloqueo' ? 'bg-red-100 text-red-800' :
-                                evento.tipo === 'exclusionMutua' ? 'bg-blue-100 text-blue-800' :
-                                evento.tipo === 'inanicion' ? 'bg-orange-100 text-orange-800' :
-                                evento.tipo === 'error' ? 'bg-red-100 text-red-800' :
-                                'bg-green-100 text-green-800'
-                              }`}
-                          >
-                            <Info className="h-3 w-3" />
-                            {evento.tipo}
-                          </span>
-                        </TableCell>
-                        <TableCell>{evento.descripcion}</TableCell>
-                        <TableCell>{proceso ? proceso.nombre : '-'}</TableCell>
-                        <TableCell>
-                          {evento.timestamp.toLocaleString('es-ES', {
-                            year: 'numeric',
-                            month: 'numeric',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                          })}
-                        </TableCell>
-                      </motion.tr>
-                    );
-                  })}
-                </AnimatePresence>
+                {state.eventos.slice().reverse().map((evento) => {
+                  const proceso = evento.proceso 
+                    ? state.procesos.find(p => p.id === evento.proceso) 
+                    : undefined;
+                  
+                  return (
+                    <TableRow key={evento.id}>
+                      <TableCell>{evento.id}</TableCell>
+                      <TableCell>
+                        <span 
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+                            ${evento.tipo === 'interbloqueo' ? 'bg-red-100 text-red-800' :
+                              evento.tipo === 'exclusionMutua' ? 'bg-blue-100 text-blue-800' :
+                              evento.tipo === 'inanicion' ? 'bg-orange-100 text-orange-800' :
+                              evento.tipo === 'error' ? 'bg-red-100 text-red-800' :
+                              'bg-green-100 text-green-800'
+                            }`}
+                        >
+                          {evento.tipo}
+                        </span>
+                      </TableCell>
+                      <TableCell>{evento.descripcion}</TableCell>
+                      <TableCell>{proceso ? proceso.nombre : '-'}</TableCell>
+                      <TableCell>
+                        {evento.timestamp.toLocaleString('es-ES', {
+                          year: 'numeric',
+                          month: 'numeric',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit'
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

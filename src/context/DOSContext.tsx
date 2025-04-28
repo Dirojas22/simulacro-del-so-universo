@@ -1,499 +1,782 @@
+import React, { createContext, useContext, useReducer, useEffect, useState } from "react";
+import { 
+  Proceso, 
+  RecursosSistema, 
+  EventoSistema, 
+  Aplicacion,
+  EstadoRed,
+  EstadoBateria,
+  Usuario
+} from "@/types";
 
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from "react";
-import { toast } from "sonner";
-import { Aplicacion, Proceso, RecursosSistema, EventoSistema, EstadoRed, EstadoBateria, Usuario } from "@/types";
-import { useSystemResources } from "@/hooks/useSystemResources";
-
-// Define el tipo para el estado del contexto
+// Estado inicial del sistema
 interface DOSState {
-  isLoggedIn: boolean;
-  username: string;
-  fondoActual: string;
-  aplicacionesAbiertas: Aplicacion[];
-  aplicacionesDisponibles: Aplicacion[];
-  procesosSistema: Proceso[];
+  procesos: Proceso[];
   recursos: RecursosSistema;
   eventos: EventoSistema[];
+  aplicacionesAbiertas: Aplicacion[];
+  aplicacionActiva: string | null;
   estadoRed: EstadoRed;
   estadoBateria: EstadoBateria;
-  usuarios: Usuario[];
   volumen: number;
+  isLoggedIn: boolean;
+  fondoActual: string;
+  usuarioActual: Usuario | null;
+  usuarios: Usuario[];
 }
 
-// Define el tipo para las acciones del reducer
-type DOSAction =
-  | { type: "LOGIN"; payload: string }
-  | { type: "LOGOUT" }
-  | { type: "CAMBIAR_FONDO"; payload: string }
-  | { type: "ABRIR_APLICACION"; payload: Aplicacion }
-  | { type: "CERRAR_APLICACION"; payload: string }
-  | { type: "MINIMIZAR_APLICACION"; payload: string }
-  | { type: "ACTIVAR_APLICACION"; payload: string }
-  | { type: "ACTUALIZAR_PROCESOS" }
-  | { type: "TERMINAR_PROCESO"; payload: number }
-  | { type: "ACTUALIZAR_QUANTUM"; payload: { id: number; quantum: number } }
-  | { type: "ACTUALIZAR_PROCESO"; payload: { id: number; cambios: Partial<Proceso> } }
-  | { type: "ACTUALIZAR_VOLUMEN"; payload: number };
+// Acciones disponibles
+type DOSAction = 
+  | { type: 'INICIAR_PROCESO', payload: Proceso }
+  | { type: 'TERMINAR_PROCESO', payload: number }
+  | { type: 'BLOQUEAR_PROCESO', payload: number }
+  | { type: 'ACTUALIZAR_QUANTUM', payload: { id: number, quantum: number } }
+  | { type: 'ACTUALIZAR_PROCESO', payload: { id: number, cambios: Partial<Proceso> } }
+  | { type: 'REGISTRAR_EVENTO', payload: Omit<EventoSistema, 'id' | 'timestamp'> }
+  | { type: 'ACTUALIZAR_RECURSOS', payload: Partial<RecursosSistema> }
+  | { type: 'ABRIR_APLICACION', payload: Aplicacion }
+  | { type: 'CERRAR_APLICACION', payload: string }
+  | { type: 'MINIMIZAR_APLICACION', payload: string }
+  | { type: 'MAXIMIZAR_APLICACION', payload: string }
+  | { type: 'ACTIVAR_APLICACION', payload: string }
+  | { type: 'ACTUALIZAR_RED', payload: EstadoRed }
+  | { type: 'ACTUALIZAR_BATERIA', payload: EstadoBateria }
+  | { type: 'ACTUALIZAR_VOLUMEN', payload: number }
+  | { type: 'LOGIN', payload?: Usuario }
+  | { type: 'LOGOUT' }
+  | { type: 'CAMBIAR_FONDO', payload: string };
 
-// Estado inicial del contexto
-const initialState: DOSState = {
-  isLoggedIn: false,
-  username: "",
-  fondoActual: "url('/fondos/fondo-windows-xp.jpg')",
-  aplicacionesAbiertas: [],
-  aplicacionesDisponibles: [
-    { id: "calculadora", nombre: "Calculadora", icono: "calculator", componente: "Calculadora", activo: false, esMinimizado: false },
-    { id: "editor", nombre: "Editor de Texto", icono: "file-text", componente: "Editor", activo: false, esMinimizado: false },
-    { id: "hojaCalculo", nombre: "Hoja de Cálculo", icono: "file-spreadsheet", componente: "HojaCalculo", activo: false, esMinimizado: false },
-    { id: "paint", nombre: "Paint", icono: "paint-bucket", componente: "Paint", activo: false, esMinimizado: false },
-    { id: "navegador", nombre: "Navegador Web", icono: "chrome", componente: "Navegador", activo: false, esMinimizado: false },
-    { id: "monitorSistema", nombre: "Monitor del Sistema", icono: "monitor", componente: "MonitorSistema", activo: false, esMinimizado: false },
-    { id: "manualUsuario", nombre: "Manual de Usuario", icono: "gallery-horizontal", componente: "ManualUsuario", activo: false, esMinimizado: false },
-    { id: "galeria", nombre: "Galería de Imágenes", icono: "gallery-horizontal", componente: "Galeria", activo: false, esMinimizado: false },
+// Aplicaciones disponibles en el sistema
+const aplicacionesDisponibles: Omit<Aplicacion, 'esMinimizado' | 'activo'>[] = [
+  { id: 'calculadora', nombre: 'Calculadora', icono: 'calculator', componente: 'Calculadora' },
+  { id: 'editor', nombre: 'Editor de Texto', icono: 'file-text', componente: 'Editor' },
+  { id: 'hoja-calculo', nombre: 'Hoja de Cálculo', icono: 'file-spreadsheet', componente: 'HojaCalculo' },
+  { id: 'paint', nombre: 'Paint', icono: 'paint-bucket', componente: 'Paint' },
+  { id: 'navegador', nombre: 'Navegador', icono: 'chrome', componente: 'Navegador' },
+  { id: 'sistema', nombre: 'Monitor del Sistema', icono: 'cpu', componente: 'MonitorSistema' },
+  { id: 'manual', nombre: 'Manual de Usuario', icono: 'help-circle', componente: 'ManualUsuario' },
+  { id: 'galeria', nombre: 'Galería', icono: 'image', componente: 'Galeria' },
+];
+
+// Categorías de fondos de pantalla
+const categorias = [
+  { id: "tecnologia", nombre: "Tecnología" },
+  { id: "naturaleza", nombre: "Naturaleza" },
+  { id: "abstracto", nombre: "Abstracto" },
+  { id: "minimalista", nombre: "Minimalista" }
+];
+
+const fondosDisponibles = {
+  tecnologia: [
+    "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80",
+    "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1484950763426-56b5bf172dbb?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=2072&q=80",
+    "https://images.unsplash.com/photo-1607252650355-f7fd0460b37b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
   ],
-  procesosSistema: [
-    { id: 1, nombre: "Sistema", estado: "activo", memoria: 256, cpu: 10, quantum: 5, prioridad: 1, tiempoEjecucion: 100, tiempoEspera: 10, pid: 4 },
-    { id: 2, nombre: "Kernel", estado: "activo", memoria: 128, cpu: 5, quantum: 3, prioridad: 2, tiempoEjecucion: 50, tiempoEspera: 5, pid: 0 },
+  naturaleza: [
+    "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?ixlib=rb-4.0.3&auto=format&fit=crop&w=2274&q=80",
+    "https://images.unsplash.com/photo-1501854140801-50d01698950b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2275&q=80",
+    "https://images.unsplash.com/photo-1426604966848-d7adac402bff?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1505765050516-f72dcac9c60e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+  ],
+  abstracto: [
+    "https://images.unsplash.com/photo-1541701494587-cb58502866ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2068&q=80",
+    "https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?ixlib=rb-4.0.3&auto=format&fit=crop&w=2080&q=80",
+    "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+  ],
+  minimalista: [
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2073&q=80",
+    "https://images.unsplash.com/photo-1496347646636-ea47f7d6b37b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=2074&q=80",
+    "https://images.unsplash.com/photo-1534447677768-be436bb09401?ixlib=rb-4.0.3&auto=format&fit=crop&w=2094&q=80",
+    "https://images.unsplash.com/photo-1498550744921-75f79806b8a7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80"
+  ]
+};
+
+// Lista de usuarios predefinidos
+const usuariosDisponibles: Usuario[] = [
+  { 
+    id: 1, 
+    nombre: 'Administrador', 
+    password: '0000', 
+    avatar: 'https://ui-avatars.com/api/?name=Administrador&background=random' 
+  },
+  { 
+    id: 2, 
+    nombre: 'Usuario', 
+    password: '0000', 
+    avatar: 'https://ui-avatars.com/api/?name=Usuario&background=random' 
+  },
+  { 
+    id: 3, 
+    nombre: 'Invitado', 
+    password: '', 
+    avatar: 'https://ui-avatars.com/api/?name=Invitado&background=random' 
+  },
+];
+
+// Estado inicial
+const initialState: DOSState = {
+  procesos: [
+    { id: 1, nombre: 'Sistema', estado: 'activo', memoria: 128, cpu: 5, quantum: 5, prioridad: 1, tiempoEjecucion: 0, tiempoEspera: 0 },
+    { id: 2, nombre: 'Gestor de Ventanas', estado: 'activo', memoria: 64, cpu: 3, quantum: 3, prioridad: 2, tiempoEjecucion: 0, tiempoEspera: 0 },
+    { id: 3, nombre: 'Servicio de Red', estado: 'activo', memoria: 32, cpu: 1, quantum: 2, prioridad: 3, tiempoEjecucion: 0, tiempoEspera: 0 },
+    { id: 4, nombre: 'Gestor de Archivos', estado: 'activo', memoria: 48, cpu: 2, quantum: 2, prioridad: 3, tiempoEjecucion: 0, tiempoEspera: 0 },
+    { id: 5, nombre: 'Monitor de Recursos', estado: 'activo', memoria: 24, cpu: 1, quantum: 1, prioridad: 4, tiempoEjecucion: 0, tiempoEspera: 0 },
+    { id: 6, nombre: 'Servicio de Audio', estado: 'activo', memoria: 16, cpu: 1, quantum: 1, prioridad: 4, tiempoEjecucion: 0, tiempoEspera: 0 },
+    { id: 7, nombre: 'Antivirus', estado: 'activo', memoria: 42, cpu: 2, quantum: 2, prioridad: 5, tiempoEjecucion: 0, tiempoEspera: 0 },
+    { id: 8, nombre: 'Indexador', estado: 'activo', memoria: 18, cpu: 1, quantum: 1, prioridad: 6, tiempoEjecucion: 0, tiempoEspera: 0 },
+    { id: 9, nombre: 'Actualizador', estado: 'esperando', memoria: 22, cpu: 0, quantum: 3, prioridad: 7, tiempoEjecucion: 0, tiempoEspera: 10 },
+    { id: 10, nombre: 'Programador de Tareas', estado: 'activo', memoria: 14, cpu: 1, quantum: 1, prioridad: 5, tiempoEjecucion: 0, tiempoEspera: 0 },
   ],
   recursos: {
-    memoriaTotal: 8192,
-    memoriaUsada: 2048,
+    memoriaTotal: 8192, // 8 GB en MB
+    memoriaUsada: 408,
     cpuTotal: 100,
-    cpuUsada: 15,
-    discoTotal: 1024 * 100, // 100 GB en MB
-    discoUsado: 1024 * 35,  // 35 GB en MB
+    cpuUsada: 17,
+    discoTotal: 512000, // 500 GB en MB
+    discoUsado: 128000,
   },
   eventos: [
-    { id: 1, tipo: "info", descripcion: "Sistema iniciado correctamente", timestamp: new Date(), proceso: undefined },
-    { id: 2, tipo: "info", descripcion: "Servicios del sistema cargados", timestamp: new Date(), proceso: 1 },
+    { 
+      id: 1, 
+      tipo: 'info', 
+      descripcion: 'Sistema iniciado correctamente', 
+      timestamp: new Date() 
+    },
   ],
+  aplicacionesAbiertas: [],
+  aplicacionActiva: null,
   estadoRed: {
-    conectado: true,
-    tipo: "WiFi"
+    conectado: false,
   },
   estadoBateria: {
-    nivel: 85,
-    cargando: true
+    nivel: 100,
+    cargando: false,
   },
-  usuarios: [
-    { id: 1, nombre: "admin", password: "admin", avatar: "https://ui-avatars.com/api/?name=Admin&background=random" },
-    { id: 2, nombre: "user", password: "user", avatar: "https://ui-avatars.com/api/?name=User&background=random" },
-  ],
   volumen: 50,
+  isLoggedIn: false,
+  fondoActual: fondosDisponibles.tecnologia[0],
+  usuarioActual: null,
+  usuarios: usuariosDisponibles,
 };
 
-// Function to generate a unique PID
-const generatePID = (existingPIDs: number[]): number => {
-  let pid;
-  do {
-    pid = Math.floor(Math.random() * 9000) + 1000; // Generate PID between 1000-9999
-  } while (existingPIDs.includes(pid));
-  return pid;
+// Reductor para manejar las acciones
+const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
+  switch (action.type) {
+    case 'INICIAR_PROCESO':
+      return {
+        ...state,
+        procesos: [...state.procesos, action.payload],
+        recursos: {
+          ...state.recursos,
+          memoriaUsada: state.recursos.memoriaUsada + action.payload.memoria,
+          cpuUsada: state.recursos.cpuUsada + action.payload.cpu,
+        },
+      };
+    
+    case 'TERMINAR_PROCESO': {
+      const proceso = state.procesos.find(p => p.id === action.payload);
+      if (!proceso) return state;
+      
+      // Find the associated application
+      const appProceso = state.aplicacionesAbiertas.find(app => app.nombre === proceso.nombre);
+      
+      return {
+        ...state,
+        procesos: state.procesos.map(p => 
+          p.id === action.payload ? { ...p, estado: 'terminado', cpu: 0 } : p
+        ),
+        recursos: {
+          ...state.recursos,
+          memoriaUsada: state.recursos.memoriaUsada - proceso.memoria,
+          cpuUsada: Math.max(0, state.recursos.cpuUsada - proceso.cpu),
+        },
+        // Close the associated application if found
+        aplicacionesAbiertas: appProceso 
+          ? state.aplicacionesAbiertas.filter(app => app.id !== appProceso.id)
+          : state.aplicacionesAbiertas,
+        aplicacionActiva: appProceso?.id === state.aplicacionActiva 
+          ? null 
+          : state.aplicacionActiva
+      };
+    }
+    
+    case 'BLOQUEAR_PROCESO': {
+      const proceso = state.procesos.find(p => p.id === action.payload);
+      if (!proceso || proceso.estado !== 'activo') return state;
+      
+      return {
+        ...state,
+        procesos: state.procesos.map(p => 
+          p.id === action.payload ? { ...p, estado: 'bloqueado' } : p
+        ),
+      };
+    }
+    
+    case 'ACTUALIZAR_QUANTUM':
+      return {
+        ...state,
+        procesos: state.procesos.map(p => 
+          p.id === action.payload.id ? { ...p, quantum: action.payload.quantum } : p
+        ),
+      };
+    
+    case 'ACTUALIZAR_PROCESO': {
+      const { id, cambios } = action.payload;
+      return {
+        ...state,
+        procesos: state.procesos.map(p => 
+          p.id === id ? { ...p, ...cambios } : p
+        ),
+      };
+    }
+    
+    case 'REGISTRAR_EVENTO':
+      return {
+        ...state,
+        eventos: [
+          ...state.eventos,
+          {
+            id: state.eventos.length + 1,
+            ...action.payload,
+            timestamp: new Date(),
+          }
+        ],
+      };
+    
+    case 'ACTUALIZAR_RECURSOS':
+      return {
+        ...state,
+        recursos: {
+          ...state.recursos,
+          ...action.payload,
+        },
+      };
+    
+    case 'ABRIR_APLICACION': {
+      // If the application is already open, just activate it
+      if (state.aplicacionesAbiertas.some(app => app.id === action.payload.id)) {
+        return {
+          ...state,
+          aplicacionesAbiertas: state.aplicacionesAbiertas.map(app => 
+            app.id === action.payload.id 
+              ? { ...app, esMinimizado: false, activo: true }
+              : { ...app, activo: false }
+          ),
+          aplicacionActiva: action.payload.id,
+        };
+      }
+      
+      // Create a new process ID
+      const nuevoProcesoId = Math.max(...state.procesos.map(p => p.id), 0) + 1;
+      
+      // Create a new process for the application
+      const nuevoProceso = {
+        id: nuevoProcesoId,
+        nombre: action.payload.nombre,
+        estado: 'activo',
+        memoria: Math.floor(Math.random() * 50) + 20, // 20-70 MB
+        cpu: Math.floor(Math.random() * 5) + 1, // 1-5%
+        quantum: 2,
+        prioridad: 5,
+        tiempoEjecucion: 0,
+        tiempoEspera: 0,
+      };
+      
+      return {
+        ...state,
+        aplicacionesAbiertas: [
+          ...state.aplicacionesAbiertas.map(app => ({ ...app, activo: false })),
+          { ...action.payload, esMinimizado: false, activo: true }
+        ],
+        aplicacionActiva: action.payload.id,
+        procesos: [...state.procesos, nuevoProceso],
+        recursos: {
+          ...state.recursos,
+          memoriaUsada: state.recursos.memoriaUsada + nuevoProceso.memoria,
+          cpuUsada: state.recursos.cpuUsada + nuevoProceso.cpu,
+        },
+      };
+    }
+    
+    case 'CERRAR_APLICACION':
+      return {
+        ...state,
+        aplicacionesAbiertas: state.aplicacionesAbiertas.filter(app => app.id !== action.payload),
+        aplicacionActiva: state.aplicacionActiva === action.payload 
+          ? (state.aplicacionesAbiertas.length > 1 
+            ? state.aplicacionesAbiertas.find(app => app.id !== action.payload)?.id || null 
+            : null) 
+          : state.aplicacionActiva,
+      };
+    
+    case 'MINIMIZAR_APLICACION':
+      return {
+        ...state,
+        aplicacionesAbiertas: state.aplicacionesAbiertas.map(app => 
+          app.id === action.payload ? { ...app, esMinimizado: true, activo: false } : app
+        ),
+        aplicacionActiva: state.aplicacionActiva === action.payload 
+          ? null 
+          : state.aplicacionActiva,
+      };
+    
+    case 'MAXIMIZAR_APLICACION':
+      return {
+        ...state,
+        aplicacionesAbiertas: state.aplicacionesAbiertas.map(app => 
+          app.id === action.payload ? { ...app, esMinimizado: false } : app
+        ),
+      };
+    
+    case 'ACTIVAR_APLICACION':
+      return {
+        ...state,
+        aplicacionesAbiertas: state.aplicacionesAbiertas.map(app => 
+          app.id === action.payload ? { ...app, activo: true, esMinimizado: false } : { ...app, activo: false }
+        ),
+        aplicacionActiva: action.payload,
+      };
+    
+    case 'ACTUALIZAR_RED':
+      return {
+        ...state,
+        estadoRed: action.payload,
+      };
+    
+    case 'ACTUALIZAR_BATERIA':
+      return {
+        ...state,
+        estadoBateria: action.payload,
+      };
+    
+    case 'ACTUALIZAR_VOLUMEN':
+      return {
+        ...state,
+        volumen: action.payload,
+      };
+    
+    case 'LOGIN':
+      return {
+        ...state,
+        isLoggedIn: true,
+        usuarioActual: action.payload || state.usuarios[0],
+        eventos: [
+          ...state.eventos,
+          {
+            id: state.eventos.length + 1,
+            tipo: 'info',
+            descripcion: `Inicio de sesión: ${action.payload?.nombre || state.usuarios[0].nombre}`,
+            timestamp: new Date(),
+          }
+        ],
+      };
+    
+    case 'LOGOUT':
+      return {
+        ...state,
+        isLoggedIn: false,
+        usuarioActual: null,
+        aplicacionesAbiertas: [],
+        aplicacionActiva: null,
+        eventos: [
+          ...state.eventos,
+          {
+            id: state.eventos.length + 1,
+            tipo: 'info',
+            descripcion: `Cierre de sesión: ${state.usuarioActual?.nombre || 'Usuario'}`,
+            timestamp: new Date(),
+          }
+        ],
+      };
+    
+    case 'CAMBIAR_FONDO':
+      return {
+        ...state,
+        fondoActual: action.payload,
+        eventos: [
+          ...state.eventos,
+          {
+            id: state.eventos.length + 1,
+            tipo: 'info',
+            descripcion: 'Fondo de pantalla cambiado',
+            timestamp: new Date(),
+          }
+        ],
+      };
+    
+    default:
+      return state;
+  }
 };
 
-// Function to map application state to process state
-const mapAppStateToProcessState = (appState: boolean): "activo" | "bloqueado" | "esperando" | "terminado" => {
-  if (appState) return "activo";
-  return "terminado";
-};
-
-// Function to generate a random process for an application
-const generarProcesoDesdApp = (app: Aplicacion, existingPIDs: number[]): Proceso => ({
-  id: Math.floor(Math.random() * 10000),
-  pid: generatePID(existingPIDs),
-  nombre: `${app.nombre}.exe`,
-  estado: "activo",
-  memoria: Math.floor(Math.random() * 150) + 50, // 50-200 MB
-  cpu: Math.floor(Math.random() * 10) + 5, // 5-15%
-  quantum: Math.floor(Math.random() * 5) + 1,
-  prioridad: Math.floor(Math.random() * 3) + 1,
-  tiempoEjecucion: Math.floor(Math.random() * 100),
-  tiempoEspera: 0,
-  appId: app.id,
-});
-
-// Function to generate a random process
-const generarProceso = (
-  nombre: string, 
-  estado: "activo" | "bloqueado" | "esperando" | "terminado" = "activo",
-  existingPIDs: number[] = []
-): Proceso => ({
-  id: Math.floor(Math.random() * 10000),
-  pid: generatePID(existingPIDs),
-  nombre,
-  estado,
-  memoria: Math.floor(Math.random() * 500) + 100,
-  cpu: Math.floor(Math.random() * 30) + 5,
-  quantum: Math.floor(Math.random() * 10) + 1,
-  prioridad: Math.floor(Math.random() * 10) + 1,
-  tiempoEjecucion: Math.floor(Math.random() * 100),
-  tiempoEspera: Math.floor(Math.random() * 20),
-});
-
-// Crea el contexto
-const DOSContext = createContext<{
+// Crear el contexto
+interface DOSContextType {
   state: DOSState;
   dispatch: React.Dispatch<DOSAction>;
   abrirAplicacion: (id: string) => void;
   cerrarAplicacion: (id: string) => void;
   minimizarAplicacion: (id: string) => void;
   activarAplicacion: (id: string) => void;
-} | undefined>(undefined);
+  aplicacionesDisponibles: Omit<Aplicacion, 'esMinimizado' | 'activo'>[];
+}
 
-// Función para reproducir sonidos
-const reproducirSonido = (tipo: 'click' | 'error' | 'notification') => {
-  const audio = new Audio();
-  switch (tipo) {
-    case 'click':
-      audio.src = '/sonidos/click.mp3';
-      break;
-    case 'error':
-      audio.src = '/sonidos/error.mp3';
-      break;
-    case 'notification':
-      audio.src = '/sonidos/notification.mp3';
-      break;
-  }
-  audio.play().catch(e => console.log("Error reproduciendo sonido:", e));
-};
+const DOSContext = createContext<DOSContextType | undefined>(undefined);
 
-// El reducer que maneja las acciones
-const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
-  switch (action.type) {
-    case "LOGIN":
-      return { ...state, isLoggedIn: true, username: action.payload };
-    case "LOGOUT":
-      return { ...state, isLoggedIn: false, username: "" };
-    case "CAMBIAR_FONDO":
-      return { ...state, fondoActual: action.payload };
-    case "ABRIR_APLICACION": {
-      const app = action.payload;
-      if (state.aplicacionesAbiertas.find((a) => a.id === app.id)) {
-        toast("La aplicación ya está abierta.");
-        return state;
-      }
-      
-      // Añadir la aplicación a las abiertas
-      const appActualizada = { ...app, activo: true, esMinimizado: false };
-      const nuevasAppsAbiertas = [...state.aplicacionesAbiertas, appActualizada];
-      
-      // Crear un nuevo proceso para la aplicación
-      const existingPIDs = state.procesosSistema.map(p => p.pid!).filter(Boolean);
-      const nuevoProceso = generarProcesoDesdApp(app, existingPIDs);
-      
-      // Añadir evento
-      const nuevoEvento = {
-        id: state.eventos.length + 1,
-        tipo: 'info' as const,
-        descripcion: `Aplicación ${app.nombre} iniciada`,
-        timestamp: new Date(),
-        proceso: nuevoProceso.id
-      };
-
-      toast(`Abriendo ${app.nombre}...`);
-      setTimeout(() => reproducirSonido('notification'), 300);
-      
-      // Actualizar recursos del sistema
-      const nuevaMemoriaUsada = Math.min(state.recursos.memoriaTotal, state.recursos.memoriaUsada + nuevoProceso.memoria);
-      const nuevaCpuUsada = Math.min(100, state.recursos.cpuUsada + nuevoProceso.cpu);
-      
-      return { 
-        ...state, 
-        aplicacionesAbiertas: nuevasAppsAbiertas,
-        procesosSistema: [...state.procesosSistema, nuevoProceso],
-        eventos: [...state.eventos, nuevoEvento],
-        recursos: {
-          ...state.recursos,
-          memoriaUsada: nuevaMemoriaUsada,
-          cpuUsada: nuevaCpuUsada
-        }
-      };
-    }
-    case "CERRAR_APLICACION": {
-      const id = action.payload;
-      
-      // Buscar la aplicación a cerrar
-      const appACerrar = state.aplicacionesAbiertas.find(app => app.id === id);
-      if (!appACerrar) {
-        return state;
-      }
-      
-      // Remover la aplicación de las abiertas
-      const nuevasAppsAbiertas = state.aplicacionesAbiertas.filter((app) => app.id !== id);
-      
-      // Buscar y actualizar el proceso asociado
-      const procesoACerrar = state.procesosSistema.find(p => p.appId === id);
-      if (procesoACerrar) {
-        // Crear evento de cierre
-        const nuevoEvento = {
-          id: state.eventos.length + 1,
-          tipo: 'info' as const,
-          descripcion: `Aplicación ${appACerrar.nombre} cerrada`,
-          timestamp: new Date(),
-          proceso: procesoACerrar.id
-        };
-        
-        // Actualizar recursos del sistema
-        const nuevaMemoriaUsada = Math.max(384, state.recursos.memoriaUsada - procesoACerrar.memoria);
-        const nuevaCpuUsada = Math.max(15, state.recursos.cpuUsada - procesoACerrar.cpu);
-        
-        // Actualizar procesos
-        const nuevosProcesos = state.procesosSistema.filter(p => p.id !== procesoACerrar.id);
-        
-        toast(`Cerrando ${appACerrar.nombre}...`);
-        reproducirSonido('click');
-        
-        return {
-          ...state,
-          aplicacionesAbiertas: nuevasAppsAbiertas,
-          procesosSistema: nuevosProcesos,
-          eventos: [...state.eventos, nuevoEvento],
-          recursos: {
-            ...state.recursos,
-            memoriaUsada: nuevaMemoriaUsada,
-            cpuUsada: nuevaCpuUsada
-          }
-        };
-      }
-      
-      toast(`Cerrando aplicación...`);
-      return { ...state, aplicacionesAbiertas: nuevasAppsAbiertas };
-    }
-    case "MINIMIZAR_APLICACION": {
-      const id = action.payload;
-      const nuevasAplicaciones = state.aplicacionesAbiertas.map((app) =>
-        app.id === id ? { ...app, esMinimizado: !app.esMinimizado } : app
-      );
-      return { ...state, aplicacionesAbiertas: nuevasAplicaciones };
-    }
-    case "ACTIVAR_APLICACION": {
-      const id = action.payload;
-      const nuevasAplicaciones = state.aplicacionesAbiertas.map((app) => ({
-        ...app,
-        activo: app.id === id,
-      }));
-      return { ...state, aplicacionesAbiertas: nuevasAplicaciones };
-    }
-    case "ACTUALIZAR_PROCESOS": {
-      const existingPIDs = state.procesosSistema.map(p => p.pid!).filter(Boolean);
-      
-      // Mantener procesos del sistema
-      const procesosDeSistema = state.procesosSistema.filter(p => 
-        p.nombre === "Sistema" || p.nombre === "Kernel"
-      );
-      
-      // Crear nuevos procesos para las aplicaciones abiertas
-      const procesosDeAplicaciones = state.aplicacionesAbiertas.map(app => {
-        const proceso = generarProcesoDesdApp(app, existingPIDs);
-        existingPIDs.push(proceso.pid!);
-        return proceso;
+// Proveedor del contexto
+export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [state, dispatch] = useReducer(dosReducer, initialState);
+  const [onlineStatus, setOnlineStatus] = useState(navigator.onLine);
+  
+  // Función para abrir una aplicación
+  const abrirAplicacion = (id: string) => {
+    const appInfo = aplicacionesDisponibles.find(app => app.id === id);
+    if (appInfo) {
+      dispatch({ 
+        type: 'ABRIR_APLICACION', 
+        payload: { ...appInfo, esMinimizado: false, activo: true } 
       });
       
-      return {
-        ...state,
-        procesosSistema: [...procesosDeSistema, ...procesosDeAplicaciones],
-        recursos: {
-          ...state.recursos,
-          memoriaUsada: Math.max(384, procesosDeSistema.reduce((acc, p) => acc + p.memoria, 0) + 
-            procesosDeAplicaciones.reduce((acc, p) => acc + p.memoria, 0)),
-          cpuUsada: Math.max(15, procesosDeSistema.reduce((acc, p) => acc + p.cpu, 0) + 
-            procesosDeAplicaciones.reduce((acc, p) => acc + p.cpu, 0))
+      // Registrar evento
+      dispatch({
+        type: 'REGISTRAR_EVENTO',
+        payload: {
+          tipo: 'info',
+          descripcion: `Aplicación iniciada: ${appInfo.nombre}`,
         }
-      };
-    }
-    case "TERMINAR_PROCESO": {
-      const procesoId = action.payload;
+      });
       
-      // Find the process to terminate
-      const procesoATerminar = state.procesosSistema.find(p => p.id === procesoId);
-      if (!procesoATerminar) {
-        return state;
-      }
-      
-      // Crear evento de terminación
-      const nuevoEvento = {
-        id: state.eventos.length + 1,
-        tipo: 'info' as const,
-        descripcion: `Proceso ${procesoATerminar.nombre} terminado`,
-        timestamp: new Date(),
-        proceso: procesoATerminar.id
-      };
-      
-      // Actualizar recursos del sistema
-      const nuevaMemoriaUsada = Math.max(384, state.recursos.memoriaUsada - procesoATerminar.memoria);
-      const nuevaCpuUsada = Math.max(15, state.recursos.cpuUsada - procesoATerminar.cpu);
-      
-      // If it's a system process or not found, just remove it from processes
-      if (procesoATerminar.nombre === "Sistema" || procesoATerminar.nombre === "Kernel") {
-        toast.error("No se puede terminar un proceso del sistema");
-        reproducirSonido('error');
-        return state;
-      }
-      
-      // Play sound effect
-      reproducirSonido('click');
-      
-      // If it's an application process, also close the application
-      if (procesoATerminar.appId) {
-        const nuevasAppsAbiertas = state.aplicacionesAbiertas.filter(app => app.id !== procesoATerminar.appId);
-        toast(`Proceso ${procesoATerminar.nombre} terminado`);
-        
-        return {
-          ...state,
-          procesosSistema: state.procesosSistema.filter(p => p.id !== procesoId),
-          aplicacionesAbiertas: nuevasAppsAbiertas,
-          eventos: [...state.eventos, nuevoEvento],
-          recursos: {
-            ...state.recursos,
-            memoriaUsada: nuevaMemoriaUsada,
-            cpuUsada: nuevaCpuUsada
-          }
-        };
-      }
-      
-      // For non-app processes
-      toast(`Proceso ${procesoATerminar.nombre} terminado`);
-      return {
-        ...state,
-        procesosSistema: state.procesosSistema.filter(p => p.id !== procesoId),
-        eventos: [...state.eventos, nuevoEvento],
-        recursos: {
-          ...state.recursos,
-          memoriaUsada: nuevaMemoriaUsada,
-          cpuUsada: nuevaCpuUsada
+      // Create a new process for the application
+      const nuevoId = Math.max(...state.procesos.map(p => p.id)) + 1;
+      dispatch({
+        type: 'INICIAR_PROCESO',
+        payload: {
+          id: nuevoId,
+          nombre: appInfo.nombre,
+          estado: 'activo',
+          memoria: Math.floor(Math.random() * 50) + 20, // 20-70 MB
+          cpu: Math.floor(Math.random() * 5) + 1, // 1-5%
+          quantum: 2,
+          prioridad: 5,
+          tiempoEjecucion: 0,
+          tiempoEspera: 0,
         }
-      };
+      });
     }
-    case "ACTUALIZAR_QUANTUM": {
-      const { id, quantum } = action.payload;
-      return {
-        ...state,
-        procesosSistema: state.procesosSistema.map(proceso =>
-          proceso.id === id ? { ...proceso, quantum } : proceso
-        )
-      };
-    }
-    case "ACTUALIZAR_PROCESO": {
-      const { id, cambios } = action.payload;
+  };
+  
+  // Función para cerrar una aplicación
+  const cerrarAplicacion = (id: string) => {
+    const app = state.aplicacionesAbiertas.find(app => app.id === id);
+    if (app) {
+      dispatch({ type: 'CERRAR_APLICACION', payload: id });
       
-      const procesoActualizado = state.procesosSistema.find(p => p.id === id);
-      if (!procesoActualizado) return state;
+      // Registrar evento
+      dispatch({
+        type: 'REGISTRAR_EVENTO',
+        payload: {
+          tipo: 'info',
+          descripcion: `Aplicación cerrada: ${app.nombre}`,
+        }
+      });
       
-      // Check if CPU usage is high and alert if necessary
-      if (cambios.cpu && cambios.cpu > 80) {
-        toast.warning(`¡El proceso ${procesoActualizado.nombre} está usando mucha CPU (${Math.floor(cambios.cpu)}%)!`);
-        reproducirSonido('error');
+      // Terminar el proceso asociado
+      const proceso = state.procesos.find(p => p.nombre === app.nombre && p.estado === 'activo');
+      if (proceso) {
+        dispatch({ type: 'TERMINAR_PROCESO', payload: proceso.id });
       }
-      
-      // Check if memory usage is high and alert if necessary
-      if (cambios.memoria && cambios.memoria > 400) {
-        toast.warning(`¡El proceso ${procesoActualizado.nombre} está usando mucha memoria (${cambios.memoria} MB)!`);
-      }
-      
-      return {
-        ...state,
-        procesosSistema: state.procesosSistema.map(proceso =>
-          proceso.id === id ? { ...proceso, ...cambios } : proceso
-        )
-      };
     }
-    case "ACTUALIZAR_VOLUMEN": {
-      return { ...state, volumen: action.payload };
-    }
-    default:
-      return state;
-  }
-};
-
-// Hook personalizado para usar el contexto
-const useDOS = () => {
-  const context = useContext(DOSContext);
-  if (!context) {
-    throw new Error("useDOS debe ser usado dentro de un DOSProvider");
-  }
-  return context;
-};
-
-// Provider del contexto
-const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(dosReducer, initialState);
-  const { resources, updateResources } = useSystemResources();
-
+  };
+  
+  // Función para minimizar una aplicación
+  const minimizarAplicacion = (id: string) => {
+    dispatch({ type: 'MINIMIZAR_APLICACION', payload: id });
+  };
+  
+  // Función para activar una aplicación
+  const activarAplicacion = (id: string) => {
+    dispatch({ type: 'ACTIVAR_APLICACION', payload: id });
+  };
+  
+  // Efecto para monitorear el estado de la conexión
   useEffect(() => {
-    updateResources({
-      cpuUsage: state.recursos.cpuUsada,
-      memoryUsage: state.recursos.memoriaUsada,
+    const handleOnline = () => {
+      setOnlineStatus(true);
+      dispatch({ 
+        type: 'ACTUALIZAR_RED', 
+        payload: { conectado: true, tipo: 'WiFi' } 
+      });
+      
+      dispatch({
+        type: 'REGISTRAR_EVENTO',
+        payload: {
+          tipo: 'info',
+          descripcion: 'Conexión establecida a la red',
+        }
+      });
+    };
+    
+    const handleOffline = () => {
+      setOnlineStatus(false);
+      dispatch({ 
+        type: 'ACTUALIZAR_RED', 
+        payload: { conectado: false } 
+      });
+      
+      dispatch({
+        type: 'REGISTRAR_EVENTO',
+        payload: {
+          tipo: 'info',
+          descripcion: 'Conexión a la red perdida',
+        }
+      });
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Inicializar el estado de la conexión
+    dispatch({ 
+      type: 'ACTUALIZAR_RED', 
+      payload: { conectado: navigator.onLine, tipo: navigator.onLine ? 'WiFi' : undefined } 
     });
-  }, [state.recursos, updateResources]);
-
-  // Actualizar valores aleatorios de los procesos activos cada 5 segundos
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+  
+  // Efecto para simular la batería
   useEffect(() => {
-    const interval = setInterval(() => {
-      state.procesosSistema.forEach(proceso => {
+    // Solo en navegadores que soportan la API de batería
+    if ('getBattery' in navigator) {
+      const updateBattery = async () => {
+        try {
+          // @ts-ignore - La API getBattery no está en los tipos de TypeScript
+          const battery = await navigator.getBattery();
+          
+          dispatch({
+            type: 'ACTUALIZAR_BATERIA',
+            payload: {
+              nivel: Math.floor(battery.level * 100),
+              cargando: battery.charging,
+            }
+          });
+          
+          battery.addEventListener('levelchange', () => {
+            dispatch({
+              type: 'ACTUALIZAR_BATERIA',
+              payload: {
+                nivel: Math.floor(battery.level * 100),
+                cargando: battery.charging,
+              }
+            });
+          });
+          
+          battery.addEventListener('chargingchange', () => {
+            dispatch({
+              type: 'ACTUALIZAR_BATERIA',
+              payload: {
+                nivel: Math.floor(battery.level * 100),
+                cargando: battery.charging,
+              }
+            });
+            
+            dispatch({
+              type: 'REGISTRAR_EVENTO',
+              payload: {
+                tipo: 'info',
+                descripcion: battery.charging 
+                  ? 'Batería conectada y cargando' 
+                  : 'Batería desconectada, usando batería',
+              }
+            });
+          });
+        } catch (error) {
+          console.error('Error al acceder a la información de la batería:', error);
+          // Usar valores simulados si no podemos acceder a la API
+          dispatch({
+            type: 'ACTUALIZAR_BATERIA',
+            payload: {
+              nivel: 75,
+              cargando: true,
+            }
+          });
+        }
+      };
+      
+      updateBattery();
+    } else {
+      // Simular batería si no está disponible la API
+      console.log('API de Batería no disponible, usando simulación');
+      dispatch({
+        type: 'ACTUALIZAR_BATERIA',
+        payload: {
+          nivel: 80,
+          cargando: true,
+        }
+      });
+    }
+  }, []);
+  
+  // Simular cambios en los recursos del sistema
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // Simular fluctuaciones en el uso de CPU y memoria
+      const cpuDelta = Math.floor(Math.random() * 5) - 2; // -2 a +2
+      const memoriaDelta = Math.floor(Math.random() * 20) - 5; // -5 a +15
+      
+      const nuevaCpuUsada = Math.max(15, Math.min(25, state.recursos.cpuUsada + cpuDelta));
+      const nuevaMemoriaUsada = Math.max(400, Math.min(600, state.recursos.memoriaUsada + memoriaDelta));
+      
+      dispatch({
+        type: 'ACTUALIZAR_RECURSOS',
+        payload: {
+          cpuUsada: nuevaCpuUsada,
+          memoriaUsada: nuevaMemoriaUsada,
+        }
+      });
+      
+      // Simular eventos aleatorios del sistema
+      if (Math.random() < 0.05) { // 5% de probabilidad
+        const tiposEvento = ['interbloqueo', 'exclusionMutua', 'inanicion'] as const;
+        const tipoEvento = tiposEvento[Math.floor(Math.random() * tiposEvento.length)];
+        const procesoAleatorio = state.procesos[Math.floor(Math.random() * state.procesos.length)];
+        
+        let descripcion = '';
+        switch (tipoEvento) {
+          case 'interbloqueo':
+            descripcion = `Interbloqueo detectado en el proceso ${procesoAleatorio.nombre}`;
+            break;
+          case 'exclusionMutua':
+            descripcion = `Exclusión mutua aplicada en el proceso ${procesoAleatorio.nombre}`;
+            break;
+          case 'inanicion':
+            descripcion = `Inanición detectada en el proceso ${procesoAleatorio.nombre}`;
+            break;
+        }
+        
+        dispatch({
+          type: 'REGISTRAR_EVENTO',
+          payload: {
+            tipo: tipoEvento,
+            descripcion,
+            proceso: procesoAleatorio.id,
+          }
+        });
+        
+        // Si es inanición, bloqueamos el proceso
+        if (tipoEvento === 'inanicion') {
+          dispatch({
+            type: 'BLOQUEAR_PROCESO',
+            payload: procesoAleatorio.id,
+          });
+        }
+      }
+      
+      // Actualizar tiempos de ejecución y espera
+      state.procesos.forEach(proceso => {
         if (proceso.estado === 'activo') {
-          const cpuDelta = Math.random() * 4 - 1.5; // -1.5 a +2.5
-          const memoriaDelta = Math.floor(Math.random() * 8) - 3; // -3 a +5
+          const nuevoTiempoEjecucion = proceso.tiempoEjecucion + 1;
           
           dispatch({
             type: 'ACTUALIZAR_PROCESO',
             payload: {
               id: proceso.id,
               cambios: {
-                cpu: Math.max(0.1, Math.min(proceso.cpu + cpuDelta, 100)),
-                memoria: Math.max(1, Math.min(proceso.memoria + memoriaDelta, 512)),
-                tiempoEjecucion: proceso.tiempoEjecucion + 1
+                tiempoEjecucion: nuevoTiempoEjecucion,
+                // Simular pequeñas fluctuaciones en el uso de CPU
+                cpu: Math.max(0.1, Math.min(proceso.cpu + (Math.random() * 0.6 - 0.3), 100))
               }
             }
           });
+          
+          // Simulación básica de planificación por quantum
+          if (nuevoTiempoEjecucion % proceso.quantum === 0) {
+            // El proceso ha consumido su quantum, podría bloquearse
+            if (Math.random() < 0.1) { // 10% de probabilidad
+              dispatch({
+                type: 'BLOQUEAR_PROCESO',
+                payload: proceso.id,
+              });
+              
+              dispatch({
+                type: 'REGISTRAR_EVENTO',
+                payload: {
+                  tipo: 'info',
+                  descripcion: `Proceso ${proceso.nombre} bloqueado por consumo de quantum`,
+                  proceso: proceso.id,
+                }
+              });
+            }
+          }
+        } else if (proceso.estado === 'esperando' || proceso.estado === 'bloqueado') {
+          const nuevoTiempoEspera = proceso.tiempoEspera + 1;
+          
+          dispatch({
+            type: 'ACTUALIZAR_PROCESO',
+            payload: {
+              id: proceso.id,
+              cambios: {
+                tiempoEspera: nuevoTiempoEspera
+              }
+            }
+          });
+          
+          // Posibilidad de desbloquear procesos
+          if (proceso.estado === 'bloqueado' && Math.random() < 0.2) { // 20% de probabilidad
+            dispatch({
+              type: 'ACTUALIZAR_PROCESO',
+              payload: {
+                id: proceso.id,
+                cambios: {
+                  estado: 'activo',
+                  tiempoEspera: nuevoTiempoEspera
+                }
+              }
+            });
+            
+            dispatch({
+              type: 'REGISTRAR_EVENTO',
+              payload: {
+                tipo: 'info',
+                descripcion: `Proceso ${proceso.nombre} desbloqueado`,
+                proceso: proceso.id,
+              }
+            });
+          }
         }
       });
       
-      // Actualizar valores aleatorios para recursos del sistema
-      const memoriaUsadaDelta = Math.floor(Math.random() * 100) - 40;
-      const cpuUsadaDelta = Math.random() * 4 - 1.5;
-      
-      const nuevaMemoriaUsada = Math.max(384, Math.min(
-        state.recursos.memoriaTotal * 0.9,
-        state.recursos.memoriaUsada + memoriaUsadaDelta
-      ));
-      
-      const nuevaCpuUsada = Math.max(15, Math.min(
-        90,
-        state.recursos.cpuUsada + cpuUsadaDelta
-      ));
-      
-      updateResources({
-        cpuUsage: nuevaCpuUsada,
-        memoryUsage: nuevaMemoriaUsada
-      });
-      
-    }, 5000);
+    }, 3000); // Actualizar cada 3 segundos
     
-    return () => clearInterval(interval);
-  }, [state.procesosSistema, state.recursos, updateResources]);
-
-  const abrirAplicacion = useCallback((id: string) => {
-    const app = state.aplicacionesDisponibles.find((app) => app.id === id);
-    if (app) {
-      dispatch({ type: "ABRIR_APLICACION", payload: app });
-    }
-  }, [state.aplicacionesDisponibles, dispatch]);
-
-  const cerrarAplicacion = useCallback((id: string) => {
-    dispatch({ type: "CERRAR_APLICACION", payload: id });
-  }, [dispatch]);
-
-  const minimizarAplicacion = useCallback((id: string) => {
-    dispatch({ type: "MINIMIZAR_APLICACION", payload: id });
-  }, [dispatch]);
-
-  const activarAplicacion = useCallback((id: string) => {
-    dispatch({ type: "ACTIVAR_APLICACION", payload: id });
-  }, [dispatch]);
-
-  const value = { state, dispatch, abrirAplicacion, cerrarAplicacion, minimizarAplicacion, activarAplicacion };
-
+    return () => clearInterval(intervalId);
+  }, [state.procesos, state.recursos]);
+  
+  const value = {
+    state,
+    dispatch,
+    abrirAplicacion,
+    cerrarAplicacion,
+    minimizarAplicacion,
+    activarAplicacion,
+    aplicacionesDisponibles,
+  };
+  
   return <DOSContext.Provider value={value}>{children}</DOSContext.Provider>;
 };
 
-export { DOSProvider, useDOS };
+// Hook personalizado para usar el contexto
+export const useDOS = () => {
+  const context = useContext(DOSContext);
+  if (context === undefined) {
+    throw new Error('useDOS debe ser usado dentro de un DOSProvider');
+  }
+  return context;
+};

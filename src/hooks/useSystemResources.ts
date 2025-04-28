@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface SystemResources {
   cpu: number;
@@ -11,6 +11,11 @@ interface SystemResources {
     used: number;
     total: number;
   };
+}
+
+interface ResourceUpdateParams {
+  cpuUsage?: number;
+  memoryUsage?: number;
 }
 
 // Esta función es simulada ya que el navegador no permite acceso directo a recursos del sistema
@@ -26,6 +31,18 @@ export function useSystemResources() {
       total: 512000
     }
   });
+
+  // Función para actualizar recursos manualmente (usado por el contexto)
+  const updateResources = useCallback((params: ResourceUpdateParams) => {
+    setResources(prev => ({
+      ...prev,
+      cpu: params.cpuUsage !== undefined ? params.cpuUsage : prev.cpu,
+      memory: {
+        ...prev.memory,
+        used: params.memoryUsage !== undefined ? params.memoryUsage : prev.memory.used
+      }
+    }));
+  }, []);
 
   // Simular cambios aleatorios en los recursos
   useEffect(() => {
@@ -56,5 +73,5 @@ export function useSystemResources() {
     return () => clearInterval(interval);
   }, []);
 
-  return resources;
+  return { resources, updateResources };
 }

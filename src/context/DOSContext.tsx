@@ -417,7 +417,7 @@ const useDOS = () => {
 // Provider del contexto
 const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(dosReducer, initialState);
-  const { updateResources } = useSystemResources();
+  const { resources, updateResources } = useSystemResources();
 
   useEffect(() => {
     updateResources({

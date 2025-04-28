@@ -53,3 +53,12 @@ export interface Usuario {
   password: string;
   avatar: string;
 }
+
+// TR3S OS Types
+export interface Tr3sAplicacion {
+  id: string;
+  nombre: string;
+  icono: string;
+  abierta: boolean;
+  activa: boolean;
+}

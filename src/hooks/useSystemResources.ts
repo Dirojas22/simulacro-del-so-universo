@@ -27,34 +27,34 @@ export function useSystemResources() {
     }
   });
 
+  // Función para actualizar recursos manualmente
+  const updateResources = (cpuChange: number = 0, memoryChange: number = 0) => {
+    setResources(prev => {
+      const newCpu = Math.max(10, Math.min(90, prev.cpu + cpuChange));
+      const newMemory = Math.max(1024, Math.min(prev.memory.total - 1024, prev.memory.used + memoryChange));
+      
+      return {
+        cpu: newCpu,
+        memory: {
+          ...prev.memory,
+          used: newMemory
+        },
+        disk: prev.disk // Disco permanece relativamente estable
+      };
+    });
+  };
+
   // Simular cambios aleatorios en los recursos
   useEffect(() => {
     const interval = setInterval(() => {
-      setResources(prev => {
-        // Variación aleatoria de CPU entre -2% y +2%
-        const cpuDelta = Math.random() * 4 - 2;
-        const newCpu = Math.max(10, Math.min(30, prev.cpu + cpuDelta));
-        
-        // Variación aleatoria de memoria
-        const memoryDelta = Math.floor(Math.random() * 100) - 20;
-        const newMemory = Math.max(
-          1024, 
-          Math.min(prev.memory.total - 1024, prev.memory.used + memoryDelta)
-        );
-        
-        return {
-          cpu: newCpu,
-          memory: {
-            ...prev.memory,
-            used: newMemory
-          },
-          disk: prev.disk // Disco permanece relativamente estable
-        };
-      });
+      updateResources(
+        Math.random() * 4 - 2, // CPU delta entre -2% y +2%
+        Math.floor(Math.random() * 100) - 20 // Memory delta
+      );
     }, 5000); // Actualizar cada 5 segundos
 
     return () => clearInterval(interval);
   }, []);
 
-  return resources;
+  return { resources, updateResources };
 }

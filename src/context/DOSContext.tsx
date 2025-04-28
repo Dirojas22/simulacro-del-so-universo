@@ -8,6 +8,7 @@ import {
   EstadoBateria,
   Usuario
 } from "@/types";
+import { useSystemResources } from "@/hooks/useSystemResources";
 
 // Estado inicial del sistema
 interface DOSState {
@@ -53,9 +54,10 @@ const aplicacionesDisponibles: Omit<Aplicacion, 'esMinimizado' | 'activo'>[] = [
   { id: 'hoja-calculo', nombre: 'Hoja de Cálculo', icono: 'file-spreadsheet', componente: 'HojaCalculo' },
   { id: 'paint', nombre: 'Paint', icono: 'paint-bucket', componente: 'Paint' },
   { id: 'navegador', nombre: 'Navegador', icono: 'chrome', componente: 'Navegador' },
-  { id: 'sistema', nombre: 'Monitor del Sistema', icono: 'cpu', componente: 'MonitorSistema' },
-  { id: 'manual', nombre: 'Manual de Usuario', icono: 'help-circle', componente: 'ManualUsuario' },
-  { id: 'galeria', nombre: 'Galería', icono: 'image', componente: 'Galeria' },
+  { id: 'sistema', nombre: 'Monitor del Sistema', icono: 'monitor', componente: 'MonitorSistema' },
+  { id: 'manual', nombre: 'Manual de Usuario', icono: 'manual', componente: 'ManualUsuario' },
+  { id: 'galeria', nombre: 'Galería', icono: 'gallery', componente: 'Galeria' },
+  { id: 'maquina-virtual', nombre: 'Máquina Virtual', icono: 'monitor', componente: 'MaquinaVirtual' },
 ];
 
 // Categorías de fondos de pantalla
@@ -432,6 +434,7 @@ const DOSContext = createContext<DOSContextType | undefined>(undefined);
 export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(dosReducer, initialState);
   const [onlineStatus, setOnlineStatus] = useState(navigator.onLine);
+  const { updateResources } = useSystemResources();
   
   // Función para abrir una aplicación
   const abrirAplicacion = (id: string) => {

@@ -7,6 +7,7 @@ import Navegador from "./Navegador";
 import MonitorSistema from "./MonitorSistema";
 import ManualUsuario from "./ManualUsuario";
 import Galeria from "./Galeria";
+import MaquinaVirtual from "./MaquinaVirtual";
 
 const Aplicaciones = {
   Calculadora,
@@ -16,7 +17,8 @@ const Aplicaciones = {
   Navegador,
   MonitorSistema,
   ManualUsuario,
-  Galeria
+  Galeria,
+  MaquinaVirtual
 };
 
 export default Aplicaciones;

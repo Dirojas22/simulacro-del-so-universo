@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useTr3s } from "./Tr3sContext";
-import { Terminal, FileText, Calculator, Settings, File, X } from "lucide-react";
+import { Terminal, FileText, Calculator, Settings, File, Globe, BookOpen } from "lucide-react";
 
 export const Tr3sBarraTareas = () => {
   const { state, abrirApp, activarApp } = useTr3s();
@@ -18,6 +18,10 @@ export const Tr3sBarraTareas = () => {
         return <Settings size={18} />;
       case 'file':
         return <File size={18} />;
+      case 'globe':
+        return <Globe size={18} />;
+      case 'book':
+        return <BookOpen size={18} />;
       default:
         return <File size={18} />;
     }
@@ -25,7 +29,17 @@ export const Tr3sBarraTareas = () => {
 
   return (
     <div className="absolute bottom-0 left-0 right-0 h-10 backdrop-blur-md bg-black/30 border-t border-white/10 flex items-center justify-center gap-2 px-4 z-20">
-      <div className="flex-1"></div>
+      <div className="flex-1 flex items-center gap-1">
+        {state.aplicaciones.filter(app => !app.abierta).slice(0, 3).map(app => (
+          <button
+            key={app.id}
+            onClick={() => abrirApp(app.id)}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+          >
+            {getIcono(app.icono)}
+          </button>
+        ))}
+      </div>
       
       <div className="flex gap-1">
         {state.aplicaciones.map(app => (
@@ -46,7 +60,13 @@ export const Tr3sBarraTareas = () => {
         ))}
       </div>
       
-      <div className="flex-1 flex justify-end">
+      <div className="flex-1 flex justify-end gap-3">
+        <button 
+          onClick={() => abrirApp('ajustes')}
+          className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+        >
+          <Settings size={16} />
+        </button>
         <div className="bg-white/10 rounded-full px-3 py-1 text-sm">
           {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>

@@ -28,6 +28,8 @@ const initialState: Tr3sState = {
     { id: 'calculadora', nombre: 'Calculadora', icono: 'calculator', abierta: false, activa: false },
     { id: 'terminal', nombre: 'Terminal', icono: 'terminal', abierta: false, activa: false },
     { id: 'ajustes', nombre: 'Ajustes', icono: 'settings', abierta: false, activa: false },
+    { id: 'navegador', nombre: 'Navegador', icono: 'globe', abierta: false, activa: false },
+    { id: 'manual', nombre: 'Manual', icono: 'book', abierta: false, activa: false },
   ],
   appActiva: null,
   fondoPantalla: 'gradient'

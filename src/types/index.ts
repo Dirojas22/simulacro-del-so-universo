@@ -1,3 +1,4 @@
+
 export interface Proceso {
   id: number;
   nombre: string;
@@ -8,6 +9,8 @@ export interface Proceso {
   prioridad: number;
   tiempoEjecucion: number;
   tiempoEspera: number;
+  pid?: number; // Added PID for unique process identification
+  appId?: string; // Reference to the application ID
 }
 
 export interface RecursosSistema {

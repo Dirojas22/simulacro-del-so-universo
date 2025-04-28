@@ -1,8 +1,7 @@
-
 export interface Proceso {
   id: number;
   nombre: string;
-  estado: 'activo' | 'bloqueado' | 'esperando' | 'terminado';
+  estado: "activo" | "bloqueado" | "esperando" | "terminado";
   memoria: number;
   cpu: number;
   quantum: number;

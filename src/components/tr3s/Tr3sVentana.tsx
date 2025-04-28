@@ -1,8 +1,7 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useTr3s } from "./Tr3sContext";
-import { X, Minus, Terminal, Calculator, FileText, File, Settings, Globe, BookOpen } from "lucide-react";
+import { X, Minimize2, Maximize2, Terminal, Calculator, FileText, File, Settings, Globe, BookOpen } from "lucide-react";
 import { Rnd } from "react-rnd";
 
 export const Tr3sVentana = () => {
@@ -21,7 +20,10 @@ export const Tr3sVentana = () => {
   const [cargandoUrl, setCargandoUrl] = useState(false);
   
   // Estado para las notas
-  const [textoNotas, setTextoNotas] = useState("");
+  const [textoNotas, setTextoNotas] = useState(() => {
+    const savedNotes = localStorage.getItem('tr3s_notes');
+    return savedNotes || "";
+  });
   
   // Estado para los ajustes
   const [ajustes, setAjustes] = useState({
@@ -29,6 +31,55 @@ export const Tr3sVentana = () => {
     notificaciones: true,
     volumen: 75
   });
+  
+  // Estado para el monitor de memoria
+  const [memoriaInfo, setMemoriaInfo] = useState({
+    total: 16384, // 16GB en MB
+    usada: 5734,
+    procesos: [
+      { nombre: "Sistema", uso: 1240, id: 1 },
+      { nombre: "Navegador", uso: 2356, id: 2 },
+      { nombre: "Terminal", uso: 86, id: 3 },
+      { nombre: "Notas", uso: 125, id: 4 },
+      { nombre: "Calculadora", uso: 78, id: 5 },
+    ]
+  });
+
+  // Estado para ventanas maximizadas
+  const [ventanasMaximizadas, setVentanasMaximizadas] = useState<Record<string, boolean>>({});
+  const [prevSizes, setPrevSizes] = useState<Record<string, { width: number, height: number, x: number, y: number }>>({});
+  
+  // Guardar notas automáticamente
+  useEffect(() => {
+    const saveTimer = setTimeout(() => {
+      localStorage.setItem('tr3s_notes', textoNotas);
+    }, 500);
+    
+    return () => clearTimeout(saveTimer);
+  }, [textoNotas]);
+  
+  // Simulación de uso de memoria
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMemoriaInfo(prev => {
+        // Simular fluctuaciones aleatorias en el uso de memoria
+        const procesosActualizados = prev.procesos.map(proceso => ({
+          ...proceso,
+          uso: Math.max(10, proceso.uso + Math.floor(Math.random() * 41) - 20)
+        }));
+        
+        const usadaTotal = procesosActualizados.reduce((sum, proc) => sum + proc.uso, 0) + 1849; // Memoria base del sistema
+        
+        return {
+          ...prev,
+          usada: usadaTotal,
+          procesos: procesosActualizados
+        };
+      });
+    }, 3000);
+    
+    return () => clearInterval(timer);
+  }, []);
   
   // Funciones para la calculadora
   const agregarDigito = (digito: string) => {
@@ -65,7 +116,7 @@ export const Tr3sVentana = () => {
       
       // Procesar comandos simples
       if (entradaComando === "help") {
-        nuevosComandos.push("Comandos disponibles: help, clear, date, echo, ls, version");
+        nuevosComandos.push("Comandos disponibles: help, clear, date, echo [texto], ls, version, memory, ps, ping, whoami, pwd, cat, mkdir, rm");
       } else if (entradaComando === "clear") {
         return setComandos(["TR3S Terminal v1.0"]);
       } else if (entradaComando === "date") {
@@ -73,9 +124,36 @@ export const Tr3sVentana = () => {
       } else if (entradaComando.startsWith("echo ")) {
         nuevosComandos.push(entradaComando.substring(5));
       } else if (entradaComando === "ls") {
-        nuevosComandos.push("documentos/  descargas/  imágenes/  música/  videos/");
+        nuevosComandos.push("documentos/  descargas/  imágenes/  música/  videos/  proyectos/  config.sys  system.log");
       } else if (entradaComando === "version") {
-        nuevosComandos.push("TR3S OS v1.0.0");
+        nuevosComandos.push("TR3S OS v1.0.0 (Build 2025.04.28)");
+      } else if (entradaComando === "memory" || entradaComando === "free") {
+        const memoriaLibre = memoriaInfo.total - memoriaInfo.usada;
+        nuevosComandos.push(`Memoria total: ${memoriaInfo.total} MB`);
+        nuevosComandos.push(`Memoria usada: ${memoriaInfo.usada} MB (${Math.round(memoriaInfo.usada / memoriaInfo.total * 100)}%)`);
+        nuevosComandos.push(`Memoria libre: ${memoriaLibre} MB (${Math.round(memoriaLibre / memoriaInfo.total * 100)}%)`);
+      } else if (entradaComando === "ps" || entradaComando === "top") {
+        nuevosComandos.push("PID\tPROC\t\tMEM");
+        nuevosComandos.push("---\t----\t\t---");
+        memoriaInfo.procesos.forEach(proc => {
+          nuevosComandos.push(`${proc.id}\t${proc.nombre.padEnd(10, ' ')}\t${proc.uso} MB`);
+        });
+        nuevosComandos.push("1000\tSystem Core\t1849 MB");
+      } else if (entradaComando === "ping") {
+        nuevosComandos.push("PING 8.8.8.8 (8.8.8.8): 56 data bytes");
+        nuevosComandos.push("64 bytes from 8.8.8.8: icmp_seq=0 ttl=114 time=12.991 ms");
+        nuevosComandos.push("64 bytes from 8.8.8.8: icmp_seq=1 ttl=114 time=13.254 ms");
+        nuevosComandos.push("64 bytes from 8.8.8.8: icmp_seq=2 ttl=114 time=11.396 ms");
+      } else if (entradaComando === "whoami") {
+        nuevosComandos.push("usuario");
+      } else if (entradaComando === "pwd") {
+        nuevosComandos.push("/home/usuario");
+      } else if (entradaComando === "cat") {
+        nuevosComandos.push("Error: especifique un archivo");
+      } else if (entradaComando === "mkdir") {
+        nuevosComandos.push("Error: especifique un directorio");
+      } else if (entradaComando === "rm") {
+        nuevosComandos.push("Error: especifique un archivo o directorio");
       } else if (entradaComando.trim() !== "") {
         nuevosComandos.push(`Comando no reconocido: ${entradaComando}`);
       }
@@ -105,6 +183,14 @@ export const Tr3sVentana = () => {
       ...prev,
       [ajuste]: valor
     }));
+  };
+
+  // Función para maximizar/restaurar ventana
+  const toggleMaximizar = (appId: string) => {
+    setVentanasMaximizadas(prev => {
+      const isMaximized = !prev[appId];
+      return { ...prev, [appId]: isMaximized };
+    });
   };
   
   const renderContenido = (appId: string) => {
@@ -165,9 +251,13 @@ export const Tr3sVentana = () => {
         );
       case 'notas':
         return (
-          <div className="h-full p-4 bg-zinc-900">
+          <div className="h-full p-4 bg-zinc-900 flex flex-col">
+            <div className="bg-zinc-800 py-1 px-2 rounded mb-2 flex items-center text-sm">
+              <span className="mr-2">Autoguardado: Activo</span>
+              <div className={`w-2 h-2 rounded-full ${textoNotas !== localStorage.getItem('tr3s_notes') ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`}></div>
+            </div>
             <textarea 
-              className="w-full h-full bg-zinc-800 border border-zinc-700 rounded p-4 text-white resize-none focus:outline-none focus:border-cyan-500"
+              className="w-full flex-1 bg-zinc-800 border border-zinc-700 rounded p-4 text-white resize-none focus:outline-none focus:border-cyan-500"
               placeholder="Escribe tus notas aquí..."
               value={textoNotas}
               onChange={(e) => setTextoNotas(e.target.value)}
@@ -260,11 +350,57 @@ export const Tr3sVentana = () => {
               </div>
               
               <div className="bg-zinc-800 p-4 rounded-lg">
+                <h3 className="font-medium mb-3">Monitor de Memoria</h3>
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>Uso de memoria: {Math.round(memoriaInfo.usada / memoriaInfo.total * 100)}%</span>
+                    <span>{memoriaInfo.usada} MB / {memoriaInfo.total} MB</span>
+                  </div>
+                  <div className="w-full h-2 bg-zinc-700 rounded-full">
+                    <div 
+                      className={`h-2 rounded-full ${
+                        memoriaInfo.usada / memoriaInfo.total > 0.8 
+                          ? 'bg-red-500' 
+                          : memoriaInfo.usada / memoriaInfo.total > 0.6 
+                            ? 'bg-amber-500' 
+                            : 'bg-cyan-500'
+                      }`}
+                      style={{ width: `${memoriaInfo.usada / memoriaInfo.total * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <h4 className="text-sm font-medium mb-2">Procesos activos</h4>
+                <div className="bg-zinc-900 rounded border border-zinc-700 max-h-48 overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-zinc-800">
+                      <tr>
+                        <th className="px-2 py-1 text-left">Proceso</th>
+                        <th className="px-2 py-1 text-right">Uso</th>
+                        <th className="px-2 py-1 text-right">%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...memoriaInfo.procesos, { nombre: "System Core", uso: 1849, id: 1000 }]
+                        .sort((a, b) => b.uso - a.uso)
+                        .map(proceso => (
+                        <tr key={proceso.id} className="border-t border-zinc-800">
+                          <td className="px-2 py-1">{proceso.nombre}</td>
+                          <td className="px-2 py-1 text-right">{proceso.uso} MB</td>
+                          <td className="px-2 py-1 text-right">{Math.round(proceso.uso / memoriaInfo.total * 100)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <div className="bg-zinc-800 p-4 rounded-lg">
                 <h3 className="font-medium mb-3">Acerca de TR3S OS</h3>
                 <div className="text-sm text-gray-300">
                   <p className="mb-1">Versión: 1.0.0</p>
                   <p className="mb-1">Núcleo: TR3S Kernel 2025</p>
-                  <p>Memoria RAM: 8 GB</p>
+                  <p>Memoria RAM: {memoriaInfo.total / 1024} GB</p>
                 </div>
               </div>
             </div>
@@ -344,7 +480,7 @@ export const Tr3sVentana = () => {
                 <ul className="list-disc list-inside space-y-1 ml-2">
                   <li>Iconos de aplicaciones</li>
                   <li>Barra de tareas en la parte inferior</li>
-                  <li>Indicador de hora</li>
+                  <li>Indicadores del sistema (hora, batería, wifi, volumen)</li>
                 </ul>
               </div>
               
@@ -353,24 +489,30 @@ export const Tr3sVentana = () => {
                 
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Terminal</h3>
                 <p className="mb-2">
-                  La Terminal te permite interactuar con el sistema mediante comandos de texto. Algunos comandos útiles:
+                  La Terminal te permite interactuar con el sistema mediante comandos de texto. Comandos disponibles:
                 </p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>help - Muestra la lista de comandos disponibles</li>
-                  <li>clear - Limpia la pantalla</li>
-                  <li>date - Muestra la fecha y hora actuales</li>
-                  <li>ls - Lista los archivos del directorio actual</li>
-                  <li>version - Muestra la versión del sistema</li>
-                </ul>
+                <div className="bg-zinc-900 p-3 rounded font-mono text-xs">
+                  <p><span className="text-cyan-400">help</span> - Muestra la lista de comandos disponibles</p>
+                  <p><span className="text-cyan-400">clear</span> - Limpia la pantalla</p>
+                  <p><span className="text-cyan-400">date</span> - Muestra la fecha y hora actuales</p>
+                  <p><span className="text-cyan-400">echo [texto]</span> - Muestra el texto especificado</p>
+                  <p><span className="text-cyan-400">ls</span> - Lista los archivos del directorio actual</p>
+                  <p><span className="text-cyan-400">version</span> - Muestra la versión del sistema</p>
+                  <p><span className="text-cyan-400">memory</span> - Muestra el uso de memoria</p>
+                  <p><span className="text-cyan-400">ps</span> - Lista los procesos activos</p>
+                  <p><span className="text-cyan-400">ping</span> - Envía paquetes de prueba a la red</p>
+                  <p><span className="text-cyan-400">whoami</span> - Muestra el nombre del usuario actual</p>
+                  <p><span className="text-cyan-400">pwd</span> - Muestra el directorio actual</p>
+                </div>
                 
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Calculadora</h3>
                 <p className="mb-1">
-                  Una calculadora sencilla pero potente con operaciones básicas: suma, resta, multiplicación y división.
+                  Una calculadora con operaciones básicas: suma (+), resta (-), multiplicación (×), división (÷) y soporte para paréntesis.
                 </p>
                 
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Notas</h3>
                 <p className="mb-1">
-                  Aplicación para tomar notas rápidas. El contenido se guarda automáticamente mientras escribes.
+                  Aplicación para tomar notas rápidas con guardado automático. El contenido de tus notas se guarda mientras escribes.
                 </p>
                 
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Archivos</h3>
@@ -380,13 +522,31 @@ export const Tr3sVentana = () => {
                 
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Ajustes</h3>
                 <p className="mb-1">
-                  Configura tu sistema según tus preferencias: apariencia, notificaciones, volumen y más.
+                  Configura tu sistema según tus preferencias: apariencia, notificaciones, volumen y monitor de uso de memoria.
                 </p>
                 
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Navegador</h3>
                 <p className="mb-1">
                   Navega por internet con nuestro navegador integrado, que admite la mayoría de los sitios web modernos.
                 </p>
+              </div>
+              
+              <div className="bg-zinc-800 p-4 rounded-lg">
+                <h2 className="text-lg font-medium mb-2">Gestión de ventanas</h2>
+                <ul className="list-disc list-inside space-y-2 ml-2">
+                  <li>
+                    <strong>Redimensionar ventanas:</strong> Arrastra los bordes o esquinas para cambiar el tamaño.
+                  </li>
+                  <li>
+                    <strong>Maximizar/Restaurar:</strong> Haz clic en el botón central de la barra de título.
+                  </li>
+                  <li>
+                    <strong>Mover ventanas:</strong> Arrastra la barra de título para cambiar la posición.
+                  </li>
+                  <li>
+                    <strong>Cerrar ventanas:</strong> Haz clic en la X en la esquina superior derecha.
+                  </li>
+                </ul>
               </div>
               
               <div className="bg-zinc-800 p-4 rounded-lg">
@@ -447,12 +607,47 @@ export const Tr3sVentana = () => {
               width: 500,
               height: 400
             }}
+            size={{ 
+              width: ventanasMaximizadas[app.id] ? window.innerWidth - 20 : undefined,
+              height: ventanasMaximizadas[app.id] ? window.innerHeight - 70 : undefined
+            }}
+            position={{
+              x: ventanasMaximizadas[app.id] ? 10 : undefined,
+              y: ventanasMaximizadas[app.id] ? 10 : undefined
+            }}
             minWidth={300}
             minHeight={200}
             bounds="parent"
             dragHandleClassName="app-draghandle"
             className={`rounded-lg overflow-hidden shadow-2xl ${app.activa ? 'z-10' : 'z-0'}`}
             onMouseDown={() => activarApp(app.id)}
+            disableDragging={ventanasMaximizadas[app.id]}
+            enableResizing={!ventanasMaximizadas[app.id]}
+            onDragStop={(e, d) => {
+              if (!ventanasMaximizadas[app.id]) {
+                setPrevSizes(prev => ({
+                  ...prev,
+                  [app.id]: {
+                    ...(prev[app.id] || { width: 500, height: 400 }),
+                    x: d.x,
+                    y: d.y
+                  }
+                }));
+              }
+            }}
+            onResizeStop={(e, direction, ref, delta, position) => {
+              if (!ventanasMaximizadas[app.id]) {
+                setPrevSizes(prev => ({
+                  ...prev,
+                  [app.id]: {
+                    width: parseInt(ref.style.width),
+                    height: parseInt(ref.style.height),
+                    x: position.x,
+                    y: position.y
+                  }
+                }));
+              }
+            }}
           >
             <div className="flex flex-col h-full">
               <div 
@@ -470,7 +665,16 @@ export const Tr3sVentana = () => {
                   <button 
                     className="w-5 h-5 flex items-center justify-center rounded-full bg-zinc-600 hover:bg-zinc-500"
                   >
-                    <Minus size={12} />
+                    <Minimize2 size={12} />
+                  </button>
+                  <button 
+                    className="w-5 h-5 flex items-center justify-center rounded-full bg-zinc-600 hover:bg-zinc-500"
+                    onClick={() => toggleMaximizar(app.id)}
+                  >
+                    {ventanasMaximizadas[app.id] ? 
+                      <Minimize2 size={12} /> : 
+                      <Maximize2 size={12} />
+                    }
                   </button>
                   <button 
                     className="w-5 h-5 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-500"

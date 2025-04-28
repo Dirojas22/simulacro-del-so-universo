@@ -8,14 +8,22 @@ import { Tr3sProvider } from "./Tr3sContext";
 
 export const Tr3sOS = () => {
   const [cargado, setCargado] = useState(false);
+  const [progreso, setProgreso] = useState(0);
   
   useEffect(() => {
-    // Simulamos tiempo de carga del sistema
-    const timer = setTimeout(() => {
-      setCargado(true);
-    }, 1500);
+    // Simulamos tiempo de carga del sistema con progreso
+    const interval = setInterval(() => {
+      setProgreso(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setTimeout(() => setCargado(true), 200);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 150);
     
-    return () => clearTimeout(timer);
+    return () => clearInterval(interval);
   }, []);
   
   if (!cargado) {
@@ -29,13 +37,14 @@ export const Tr3sOS = () => {
         >
           TR3S
         </motion.div>
-        <motion.div 
-          initial={{ width: 0 }}
-          animate={{ width: "60%" }}
-          transition={{ duration: 1.5, ease: "easeInOut" }}
-          className="h-1.5 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mb-4"
-        />
-        <p className="text-cyan-200 text-sm">Iniciando sistema...</p>
+        <div className="w-60 h-1.5 bg-white/10 rounded-full mb-4 overflow-hidden">
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${progreso}%` }}
+            className="h-1.5 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full"
+          />
+        </div>
+        <p className="text-cyan-200 text-sm">{progreso === 100 ? "Iniciando sistema..." : "Cargando componentes del sistema..."}</p>
       </div>
     );
   }

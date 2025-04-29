@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import React from "react";
 import { useTr3s } from "./Tr3sContext";
-import { X, Minus, Terminal, Calculator, FileText, File, Settings, Globe, BookOpen, Maximize2, Activity } from "lucide-react";
-import { Rnd } from "react-rnd";
+import { X, Minus, Maximize } from "lucide-react";
+import { Tr3sAjustes } from "./aplicaciones/Tr3sAjustes";
 import { Tr3sMonitorSistema } from "./aplicaciones/Tr3sMonitorSistema";
-import Tr3sAjustes from "./aplicaciones/Tr3sAjustes";
 
 export const Tr3sVentana = () => {
   const { state, cerrarApp, activarApp, guardarNotas } = useTr3s();
@@ -677,7 +675,7 @@ export const Tr3sVentana = () => {
                     className="w-5 h-5 flex items-center justify-center rounded-full bg-zinc-600 hover:bg-zinc-500"
                     onClick={() => toggleMaximizar(app.id)}
                   >
-                    <Maximize2 size={12} />
+                    <Maximize size={12} />
                   </button>
                   <button 
                     className="w-5 h-5 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-500"

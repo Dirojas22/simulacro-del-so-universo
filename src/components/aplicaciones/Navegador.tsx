@@ -20,20 +20,20 @@ const generarTabId = (): string => {
 const Navegador: React.FC = () => {
   const { state } = useDOS();
   const [tabs, setTabs] = useState<Tab[]>([
-    { id: "tab1", url: "https://www.google.com", title: "Google", loading: false }
+    { id: "tab1", url: "https://www.baidu.com", title: "Baidu", loading: false }
   ]);
   const [activeTabId, setActiveTabId] = useState("tab1");
-  const [inputUrl, setInputUrl] = useState("https://www.google.com");
+  const [inputUrl, setInputUrl] = useState("https://www.baidu.com");
   const iframeRefs = useRef<{ [key: string]: HTMLIFrameElement | null }>({});
 
   const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0];
 
   const agregarTab = () => {
     const newId = generarTabId();
-    const newTab = { id: newId, url: "https://www.google.com", title: "Nueva pestaña", loading: false };
+    const newTab = { id: newId, url: "https://www.baidu.com", title: "Nueva pestaña", loading: false };
     setTabs([...tabs, newTab]);
     setActiveTabId(newId);
-    setInputUrl("https://www.google.com");
+    setInputUrl("https://www.baidu.com");
   };
 
   const cerrarTab = (id: string, event: React.MouseEvent) => {
@@ -41,9 +41,9 @@ const Navegador: React.FC = () => {
     if (tabs.length === 1) {
       // Si es la última pestaña, crear una nueva antes de cerrar
       const newId = generarTabId();
-      setTabs([{ id: newId, url: "https://www.google.com", title: "Nueva pestaña", loading: false }]);
+      setTabs([{ id: newId, url: "https://www.baidu.com", title: "Nueva pestaña", loading: false }]);
       setActiveTabId(newId);
-      setInputUrl("https://www.google.com");
+      setInputUrl("https://www.baidu.com");
     } else {
       const tabIndex = tabs.findIndex(tab => tab.id === id);
       const newTabs = tabs.filter(tab => tab.id !== id);
@@ -224,7 +224,18 @@ const Navegador: React.FC = () => {
             variant="outline" 
             size="sm" 
             className="mr-1 p-1 h-8 w-8"
-            onClick={navegarAtras}
+            onClick={() => {
+              // Navegar hacia atrás
+              const iframe = iframeRefs.current[activeTabId];
+              if (iframe) {
+                try {
+                  // @ts-ignore - No es estándar pero funciona en muchos navegadores
+                  iframe.contentWindow.history.back();
+                } catch (error) {
+                  console.error("No se pudo navegar hacia atrás:", error);
+                }
+              }
+            }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 18l-6-6 6-6" />
@@ -234,7 +245,18 @@ const Navegador: React.FC = () => {
             variant="outline" 
             size="sm" 
             className="mr-1 p-1 h-8 w-8"
-            onClick={navegarAdelante}
+            onClick={() => {
+              // Navegar hacia adelante
+              const iframe = iframeRefs.current[activeTabId];
+              if (iframe) {
+                try {
+                  // @ts-ignore - No es estándar pero funciona en muchos navegadores
+                  iframe.contentWindow.history.forward();
+                } catch (error) {
+                  console.error("No se pudo navegar hacia adelante:", error);
+                }
+              }
+            }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 18l6-6-6-6" />
@@ -244,7 +266,35 @@ const Navegador: React.FC = () => {
             variant="outline" 
             size="sm" 
             className="mr-2 p-1 h-8 w-8"
-            onClick={recargarTab}
+            onClick={() => {
+              // Recargar página
+              const iframe = iframeRefs.current[activeTabId];
+              if (iframe) {
+                try {
+                  iframe.src = activeTab.url;
+                  
+                  setTabs(prevTabs => 
+                    prevTabs.map(tab => 
+                      tab.id === activeTabId 
+                        ? { ...tab, loading: true } 
+                        : tab
+                    )
+                  );
+                  
+                  setTimeout(() => {
+                    setTabs(prevTabs => 
+                      prevTabs.map(tab => 
+                        tab.id === activeTabId 
+                          ? { ...tab, loading: false } 
+                          : tab
+                      )
+                    );
+                  }, 500);
+                } catch (error) {
+                  console.error("No se pudo recargar la página:", error);
+                }
+              }
+            }}
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
@@ -253,7 +303,66 @@ const Navegador: React.FC = () => {
             <Input
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
-              onKeyDown={manejarTecla}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  // Navegar a la URL
+                  if (!state.estadoRed.conectado) {
+                    alert("No hay conexión a internet disponible.");
+                    return;
+                  }
+              
+                  let urlFinal = inputUrl;
+                  if (!urlFinal.startsWith("http://") && !urlFinal.startsWith("https://")) {
+                    urlFinal = "https://" + urlFinal;
+                    setInputUrl(urlFinal);
+                  }
+              
+                  // Actualizar el estado de la pestaña activa
+                  setTabs(prevTabs => 
+                    prevTabs.map(tab => 
+                      tab.id === activeTabId 
+                        ? { ...tab, url: urlFinal, loading: true } 
+                        : tab
+                    )
+                  );
+                  
+                  // Configurar el sandbox del iframe
+                  if (iframeRefs.current[activeTabId]) {
+                    try {
+                      const iframe = iframeRefs.current[activeTabId];
+                      if (iframe) {
+                        iframe.sandbox.add("allow-same-origin");
+                        iframe.sandbox.add("allow-scripts");
+                        iframe.sandbox.add("allow-popups");
+                        iframe.sandbox.add("allow-forms");
+                        iframe.sandbox.add("allow-modals");
+                      }
+                    } catch (error) {
+                      console.error("Error al configurar sandbox:", error);
+                    }
+                  }
+              
+                  setTimeout(() => {
+                    setTabs(prevTabs => 
+                      prevTabs.map(tab => 
+                        tab.id === activeTabId 
+                          ? { ...tab, loading: false } 
+                          : tab
+                      )
+                    );
+              
+                    // Actualizar el título basado en la URL
+                    const dominio = new URL(urlFinal).hostname;
+                    setTabs(prevTabs => 
+                      prevTabs.map(tab => 
+                        tab.id === activeTabId 
+                          ? { ...tab, title: dominio } 
+                          : tab
+                      )
+                    );
+                  }, 1000);
+                }
+              }}
               className="flex-1 pl-9"
               placeholder="Introduzca la URL"
             />
@@ -262,7 +371,64 @@ const Navegador: React.FC = () => {
             variant="outline" 
             size="sm"
             className="ml-2"
-            onClick={() => navegar()}
+            onClick={() => {
+              // Navegar a la URL
+              if (!state.estadoRed.conectado) {
+                alert("No hay conexión a internet disponible.");
+                return;
+              }
+          
+              let urlFinal = inputUrl;
+              if (!urlFinal.startsWith("http://") && !urlFinal.startsWith("https://")) {
+                urlFinal = "https://" + urlFinal;
+                setInputUrl(urlFinal);
+              }
+          
+              // Actualizar el estado de la pestaña activa
+              setTabs(prevTabs => 
+                prevTabs.map(tab => 
+                  tab.id === activeTabId 
+                    ? { ...tab, url: urlFinal, loading: true } 
+                    : tab
+                )
+              );
+              
+              // Configurar el sandbox del iframe
+              if (iframeRefs.current[activeTabId]) {
+                try {
+                  const iframe = iframeRefs.current[activeTabId];
+                  if (iframe) {
+                    iframe.sandbox.add("allow-same-origin");
+                    iframe.sandbox.add("allow-scripts");
+                    iframe.sandbox.add("allow-popups");
+                    iframe.sandbox.add("allow-forms");
+                    iframe.sandbox.add("allow-modals");
+                  }
+                } catch (error) {
+                  console.error("Error al configurar sandbox:", error);
+                }
+              }
+          
+              setTimeout(() => {
+                setTabs(prevTabs => 
+                  prevTabs.map(tab => 
+                    tab.id === activeTabId 
+                      ? { ...tab, loading: false } 
+                      : tab
+                  )
+                );
+          
+                // Actualizar el título basado en la URL
+                const dominio = new URL(urlFinal).hostname;
+                setTabs(prevTabs => 
+                  prevTabs.map(tab => 
+                    tab.id === activeTabId 
+                      ? { ...tab, title: dominio } 
+                      : tab
+                  )
+                );
+              }, 1000);
+            }}
           >
             Ir
           </Button>

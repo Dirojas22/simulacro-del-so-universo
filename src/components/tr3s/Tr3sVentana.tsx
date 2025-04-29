@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useTr3s } from "./Tr3sContext";
 import { X, Minus, Terminal, Calculator, FileText, File, Settings, Globe, BookOpen, Maximize2, Activity } from "lucide-react";
 import { Rnd } from "react-rnd";
 import { Tr3sMonitorSistema } from "./aplicaciones/Tr3sMonitorSistema";
+import Tr3sAjustes from "./aplicaciones/Tr3sAjustes";
 
 export const Tr3sVentana = () => {
   const { state, cerrarApp, activarApp, guardarNotas } = useTr3s();
@@ -602,6 +602,8 @@ export const Tr3sVentana = () => {
         );
       case 'monitor':
         return <Tr3sMonitorSistema />;
+      case 'ajustes':
+        return <Tr3sAjustes />;
       default:
         return <div>App no encontrada</div>;
     }

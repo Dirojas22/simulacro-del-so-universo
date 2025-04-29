@@ -4,7 +4,29 @@ import { motion } from "framer-motion";
 import { Tr3sIconos } from "./Tr3sIconos";
 import { Tr3sBarraTareas } from "./Tr3sBarraTareas";
 import { Tr3sVentana } from "./Tr3sVentana";
-import { Tr3sProvider } from "./Tr3sContext";
+import { Tr3sProvider, useTr3s } from "./Tr3sContext";
+
+const Tr3sOSContent = () => {
+  const { state } = useTr3s();
+  
+  return (
+    <div className={`h-full w-full overflow-hidden ${state.temaOscuro 
+      ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+      : 'bg-gradient-to-br from-indigo-800 via-purple-800 to-violet-900'} text-white relative`}>
+      <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:30px_30px]"></div>
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-8xl font-bold text-white opacity-5 select-none">
+        TR3S
+      </div>
+      
+      <div className="w-full h-[calc(100%-40px)] relative z-10">
+        <Tr3sIconos />
+        <Tr3sVentana />
+      </div>
+      
+      <Tr3sBarraTareas />
+    </div>
+  );
+};
 
 export const Tr3sOS = () => {
   const [cargado, setCargado] = useState(false);
@@ -42,19 +64,7 @@ export const Tr3sOS = () => {
   
   return (
     <Tr3sProvider>
-      <div className="h-full w-full overflow-hidden bg-gradient-to-br from-indigo-800 via-purple-800 to-violet-900 text-white relative">
-        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:30px_30px]"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-8xl font-bold text-white opacity-5 select-none">
-          TR3S
-        </div>
-        
-        <div className="w-full h-[calc(100%-40px)] relative z-10">
-          <Tr3sIconos />
-          <Tr3sVentana />
-        </div>
-        
-        <Tr3sBarraTareas />
-      </div>
+      <Tr3sOSContent />
     </Tr3sProvider>
   );
 };

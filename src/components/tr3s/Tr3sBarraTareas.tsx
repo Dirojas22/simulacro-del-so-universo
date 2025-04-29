@@ -1,14 +1,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useTr3s } from "./Tr3sContext";
-import { Terminal, FileText, Calculator, Settings, File, Globe, BookOpen, Volume2, Wifi, Battery, BatteryCharging, Clock } from "lucide-react";
+import { Terminal, FileText, Calculator, Settings, File, Globe, BookOpen, Wifi, WifiOff, Battery, BatteryCharging, Clock } from "lucide-react";
 import { useHardwareStatus } from "../../hooks/useHardwareStatus";
 
 export const Tr3sBarraTareas = () => {
-  const { state, abrirApp, activarApp } = useTr3s();
+  const { state, abrirApp, activarApp, toggleWifi } = useTr3s();
   const { battery, network } = useHardwareStatus();
   const [fecha, setFecha] = useState(new Date());
-  const [volumen, setVolumen] = useState(75);
   
   // Actualizar hora cada minuto
   useEffect(() => {
@@ -88,20 +87,15 @@ export const Tr3sBarraTareas = () => {
       </div>
       
       <div className="flex-1 flex justify-end gap-3 items-center">
-        {/* Volumen */}
-        <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
-          <Volume2 size={14} />
-          <div className="w-12 h-1 bg-white/20 rounded-full">
-            <div 
-              className="h-1 bg-cyan-400 rounded-full" 
-              style={{ width: `${volumen}%` }}
-            />
-          </div>
-        </div>
-        
-        {/* WiFi */}
-        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/10">
-          <Wifi size={14} className={network.online ? "text-cyan-400" : "text-gray-400"} />
+        {/* WiFi - now clickable */}
+        <div 
+          className="flex items-center justify-center w-6 h-6 rounded-full bg-white/10 cursor-pointer hover:bg-white/20"
+          onClick={toggleWifi}
+        >
+          {network.online ? 
+            <Wifi size={14} className="text-cyan-400" /> : 
+            <WifiOff size={14} className="text-gray-400" />
+          }
         </div>
         
         {/* Batería */}

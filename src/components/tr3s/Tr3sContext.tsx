@@ -14,6 +14,8 @@ interface Tr3sState {
   appActiva: string | null;
   fondoPantalla: string;
   notas: string;
+  temaOscuro: boolean;
+  wifiActivo: boolean;
 }
 
 type Tr3sAction = 
@@ -21,7 +23,9 @@ type Tr3sAction =
   | { type: 'CERRAR_APP', payload: string }
   | { type: 'ACTIVAR_APP', payload: string }
   | { type: 'CAMBIAR_FONDO', payload: string }
-  | { type: 'GUARDAR_NOTAS', payload: string };
+  | { type: 'GUARDAR_NOTAS', payload: string }
+  | { type: 'TOGGLE_TEMA' }
+  | { type: 'TOGGLE_WIFI' };
 
 const initialState: Tr3sState = {
   aplicaciones: [
@@ -36,7 +40,9 @@ const initialState: Tr3sState = {
   ],
   appActiva: null,
   fondoPantalla: 'gradient',
-  notas: ''
+  notas: '',
+  temaOscuro: false,
+  wifiActivo: true
 };
 
 const tr3sReducer = (state: Tr3sState, action: Tr3sAction): Tr3sState => {
@@ -81,6 +87,16 @@ const tr3sReducer = (state: Tr3sState, action: Tr3sAction): Tr3sState => {
         ...state,
         notas: action.payload
       };
+    case 'TOGGLE_TEMA':
+      return {
+        ...state,
+        temaOscuro: !state.temaOscuro
+      };
+    case 'TOGGLE_WIFI':
+      return {
+        ...state,
+        wifiActivo: !state.wifiActivo
+      };
     default:
       return state;
   }
@@ -93,6 +109,8 @@ interface Tr3sContextType {
   activarApp: (id: string) => void;
   cambiarFondo: (fondo: string) => void;
   guardarNotas: (texto: string) => void;
+  toggleTema: () => void;
+  toggleWifi: () => void;
 }
 
 const Tr3sContext = createContext<Tr3sContextType | undefined>(undefined);
@@ -120,8 +138,25 @@ export const Tr3sProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'GUARDAR_NOTAS', payload: texto });
   };
 
+  const toggleTema = () => {
+    dispatch({ type: 'TOGGLE_TEMA' });
+  };
+
+  const toggleWifi = () => {
+    dispatch({ type: 'TOGGLE_WIFI' });
+  };
+
   return (
-    <Tr3sContext.Provider value={{ state, abrirApp, cerrarApp, activarApp, cambiarFondo, guardarNotas }}>
+    <Tr3sContext.Provider value={{ 
+      state, 
+      abrirApp, 
+      cerrarApp, 
+      activarApp, 
+      cambiarFondo, 
+      guardarNotas,
+      toggleTema,
+      toggleWifi
+    }}>
       {children}
     </Tr3sContext.Provider>
   );

@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useTr3s } from '../components/tr3s/Tr3sContext';
 
 interface BatteryStatus {
   level: number;
@@ -12,8 +13,9 @@ interface NetworkStatus {
 }
 
 export function useHardwareStatus() {
+  const { state } = useTr3s();
   const [battery, setBattery] = useState<BatteryStatus>({ level: 100, charging: false });
-  const [network, setNetwork] = useState<NetworkStatus>({ online: navigator.onLine });
+  const [network, setNetwork] = useState<NetworkStatus>({ online: state?.wifiActivo ?? true });
 
   // Monitorear estado de la batería
   useEffect(() => {
@@ -61,27 +63,15 @@ export function useHardwareStatus() {
     };
   }, []);
 
-  // Monitorear estado de la red
+  // Actualizar estado de la red según TR3S context
   useEffect(() => {
-    const handleOnline = () => {
-      setNetwork({ online: true, type: 'WiFi' });
-    };
-
-    const handleOffline = () => {
-      setNetwork({ online: false });
-    };
-
-    // Inicializar estado
-    setNetwork({ online: navigator.onLine, type: navigator.onLine ? 'WiFi' : undefined });
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+    if (state) {
+      setNetwork({
+        online: state.wifiActivo,
+        type: state.wifiActivo ? 'WiFi' : undefined
+      });
+    }
+  }, [state?.wifiActivo]);
 
   return { battery, network };
 }

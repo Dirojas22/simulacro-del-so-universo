@@ -80,7 +80,7 @@ const Escritorio: React.FC = () => {
         <Iconos />
       </div>
       
-      <BarraTareas fecha={fecha} />
+      <BarraTareas />
     </motion.div>
   );
 };

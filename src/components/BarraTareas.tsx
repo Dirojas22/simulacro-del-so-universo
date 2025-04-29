@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { useDOS } from "@/context/DOSContext";
 import {
@@ -12,7 +13,7 @@ import { Power, Wifi, Battery, Volume2, ChevronUp, ChevronDown, Settings } from 
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-export const BarraTareas: React.FC = () => {
+const BarraTareas: React.FC = () => {
   const { state, dispatch } = useDOS();
   const [startMenuVisible, setStartMenuVisible] = useState(false);
   const [dateTime, setDateTime] = useState(new Date());
@@ -78,7 +79,7 @@ export const BarraTareas: React.FC = () => {
             <div className="p-4">
               <h3 className="text-lg font-semibold mb-2">Menu de inicio</h3>
               <ul>
-                {state.aplicaciones.map((app) => (
+                {state.aplicacionesAbiertas.map((app) => (
                   <li key={app.id} className="hover:bg-gray-700 p-2 rounded-md cursor-pointer">
                     {app.nombre}
                   </li>
@@ -90,11 +91,11 @@ export const BarraTareas: React.FC = () => {
 
         {/* Taskbar Icons */}
         <div className="flex items-center space-x-2 ml-2">
-          {state.aplicaciones.filter(app => app.abierta).map(app => (
+          {state.aplicacionesAbiertas.filter(app => app.abierta).map(app => (
             <button
               key={app.id}
               className={`px-3 py-1 rounded hover:bg-blue-800 focus:outline-none ${app.activa ? 'bg-blue-700' : ''}`}
-              onClick={() => dispatch({ type: 'ACTIVAR_APP', payload: app.id })}
+              onClick={() => dispatch({ type: 'ACTIVAR_APLICACION', payload: app.id })}
             >
               {app.nombre}
             </button>
@@ -144,3 +145,5 @@ export const BarraTareas: React.FC = () => {
     </div>
   );
 };
+
+export default BarraTareas;

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useDOS } from "@/context/DOSContext";
-import { BarraTareas } from "./BarraTareas";
+import BarraTareas from "./BarraTareas";
 import Ventana from "./Ventana";
 import Iconos from "./Iconos";
 import Login from "./Login";
@@ -51,9 +51,6 @@ const Escritorio: React.FC = () => {
     );
   }
 
-  // Usando un fondo abstracto diferente
-  const fondoAbstracto = "https://images.unsplash.com/photo-1482881497185-d4a9ddbe4151";
-
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -61,7 +58,7 @@ const Escritorio: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="h-screen w-full overflow-hidden bg-dos-blue text-white relative"
       style={{ 
-        backgroundImage: `url('${fondoAbstracto}')`,
+        backgroundImage: `url('${state.fondoActual}')`,
         backgroundSize: "cover",
         backgroundPosition: "center"
       }}

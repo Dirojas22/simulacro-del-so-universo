@@ -34,89 +34,22 @@ export const Tr3sMonitorSistema = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Simular cambios en los recursos del sistema y procesos
+  // Simular cambios en los recursos del sistema
   useEffect(() => {
-    // Actualización más frecuente para los procesos (cada 2 segundos)
-    const procesoInterval = setInterval(() => {
-      // Actualizar procesos existentes
-      setProcesos(prev => {
-        return prev.map(proceso => ({
-          ...proceso,
-          cpu: Math.max(0.1, Math.min(proceso.cpu + (Math.random() * 0.8 - 0.4), 8)),
-          memoria: Math.max(8, Math.min(proceso.memoria + Math.floor(Math.random() * 20 - 10), 
-            proceso.nombre === "interfaz_grafica.exe" ? 300 : 200))
-        }));
-      });
-      
-      // Ocasionalmente añadir un nuevo proceso
-      if (Math.random() > 0.9) {
-        const procesosTipos = [
-          "actualizar_cache.exe", 
-          "sincronizar_datos.exe", 
-          "escaneo_sistema.exe", 
-          "optimizar_memoria.exe",
-          "monitor_red.exe"
-        ];
-        
-        const nuevoProcesoNombre = procesosTipos[Math.floor(Math.random() * procesosTipos.length)];
-        
-        setProcesos(prev => {
-          // Si ya hay muchos procesos, no añadir más
-          if (prev.length >= 10) return prev;
-          
-          // Asegurarse que no exista ya
-          if (prev.some(p => p.nombre === nuevoProcesoNombre)) return prev;
-          
-          return [...prev, {
-            id: Math.max(...prev.map(p => p.id)) + 1,
-            nombre: nuevoProcesoNombre,
-            cpu: Math.random() * 2,
-            memoria: Math.floor(Math.random() * 100) + 20,
-            estado: Math.random() > 0.3 ? "activo" : "espera"
-          }];
-        });
-      }
-      
-      // Ocasionalmente cambiar estado de un proceso o eliminarlo
-      if (Math.random() > 0.8) {
-        setProcesos(prev => {
-          // Si hay pocos procesos, no eliminar ninguno
-          if (prev.length <= 5) {
-            // Solo cambiar estado
-            const indexToChange = Math.floor(Math.random() * prev.length);
-            return prev.map((proceso, i) => 
-              i === indexToChange 
-                ? { ...proceso, estado: proceso.estado === "activo" ? "espera" : "activo" }
-                : proceso
-            );
-          }
-          
-          // Hay suficientes procesos, posiblemente eliminar uno
-          if (Math.random() > 0.7) {
-            const filteredProcesses = [...prev];
-            // No eliminar procesos del sistema (IDs 1-5)
-            if (filteredProcesses.length > 5) {
-              const indexToRemove = Math.floor(Math.random() * (filteredProcesses.length - 5)) + 5;
-              filteredProcesses.splice(indexToRemove, 1);
-            }
-            return filteredProcesses;
-          }
-          
-          // Solo cambiar estado
-          const indexToChange = Math.floor(Math.random() * prev.length);
-          return prev.map((proceso, i) => 
-            i === indexToChange 
-              ? { ...proceso, estado: proceso.estado === "activo" ? "espera" : "activo" }
-              : proceso
-          );
-        });
-      }
+    const intervalId = setInterval(() => {
+      // Actualizar uso de CPU y memoria de procesos
+      setProcesos(prev => prev.map(proceso => ({
+        ...proceso,
+        cpu: Math.max(0.1, Math.min(proceso.cpu + (Math.random() * 0.6 - 0.3), 8)),
+        memoria: Math.max(8, Math.min(proceso.memoria + Math.floor(Math.random() * 10 - 5), 
+          proceso.nombre === "interfaz_grafica.exe" ? 300 : 200))
+      })));
       
       // Simular un cambio aleatorio en los recursos del sistema
       updateResources(Math.random() * 5 - 2.5, Math.floor(Math.random() * 50 - 25));
-    }, 2000);
+    }, 3000);
     
-    return () => clearInterval(procesoInterval);
+    return () => clearInterval(intervalId);
   }, [updateResources]);
 
   // Calcular porcentajes
@@ -258,12 +191,7 @@ export const Tr3sMonitorSistema = () => {
 
       {vistaActual === 'procesos' && (
         <div className="bg-zinc-800 p-3 rounded-lg">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-medium">Procesos en ejecución ({procesos.length})</h3>
-            <div className="text-xs text-cyan-400">
-              CPU total: {procesos.reduce((sum, p) => sum + p.cpu, 0).toFixed(1)}%
-            </div>
-          </div>
+          <h3 className="text-sm font-medium mb-2">Procesos en ejecución</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="text-left">
@@ -277,7 +205,7 @@ export const Tr3sMonitorSistema = () => {
               </thead>
               <tbody>
                 {procesos.map(proceso => (
-                  <tr key={proceso.id} className="border-b border-zinc-700 hover:bg-zinc-700/50 transition-colors">
+                  <tr key={proceso.id} className="border-b border-zinc-700">
                     <td className="p-2">{proceso.id}</td>
                     <td className="p-2">{proceso.nombre}</td>
                     <td className="p-2">
@@ -305,10 +233,7 @@ export const Tr3sMonitorSistema = () => {
             <h3 className="text-sm font-medium mb-3">Uso de CPU en tiempo real</h3>
             <div className="h-32 flex items-end justify-between">
               {[...Array(20)].map((_, i) => {
-                // Hacer que las barras sean realmente dinámicas (basadas en CPU actual)
-                const baseValue = resources.cpu / 2;
-                const randomVariation = Math.random() * 20;
-                const altura = baseValue + randomVariation;
+                const altura = 10 + Math.random() * 90;
                 return (
                   <div 
                     key={i}

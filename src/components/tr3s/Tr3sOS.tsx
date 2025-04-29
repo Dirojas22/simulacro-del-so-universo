@@ -13,7 +13,7 @@ const Tr3sOSContent = () => {
   return (
     <div className={`h-full w-full overflow-hidden ${state.temaOscuro 
       ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-      : 'bg-gradient-to-br from-indigo-800 via-purple-800 to-violet-900'} text-white relative`}>
+      : 'bg-gradient-to-br from-indigo-800 via-purple-800 to-violet-900'} text-white relative transition-colors duration-500`}>
       <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:30px_30px]"></div>
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-8xl font-bold text-white opacity-5 select-none">
         TR3S

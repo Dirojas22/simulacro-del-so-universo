@@ -14,6 +14,8 @@ export const Tr3sMonitorSistema = () => {
   ]);
   const [tiempoActivo, setTiempoActivo] = useState({ horas: 1, minutos: 23 });
   const [vistaActual, setVistaActual] = useState('general');
+  const [cpuHistory, setCpuHistory] = useState(Array(20).fill(0).map(() => Math.random() * 30 + 10));
+  const [memHistory, setMemHistory] = useState(Array(20).fill(0).map(() => Math.random() * 20 + 20));
 
   // Actualizar tiempo activo
   useEffect(() => {
@@ -34,23 +36,61 @@ export const Tr3sMonitorSistema = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Simular cambios en los recursos del sistema
+  // Simular cambios en los recursos del sistema más dinámicos
   useEffect(() => {
     const intervalId = setInterval(() => {
-      // Actualizar uso de CPU y memoria de procesos
-      setProcesos(prev => prev.map(proceso => ({
-        ...proceso,
-        cpu: Math.max(0.1, Math.min(proceso.cpu + (Math.random() * 0.6 - 0.3), 8)),
-        memoria: Math.max(8, Math.min(proceso.memoria + Math.floor(Math.random() * 10 - 5), 
-          proceso.nombre === "interfaz_grafica.exe" ? 300 : 200))
-      })));
+      // Actualizar uso de CPU y memoria de procesos con valores más dinámicos
+      setProcesos(prev => prev.map(proceso => {
+        // Añadir más variabilidad a los cambios
+        const cpuChange = Math.random() * 1.2 - 0.5;
+        const memChange = Math.floor(Math.random() * 20 - 8);
+        
+        // Posibilidad de cambiar estado ocasionalmente
+        const shouldChangeState = Math.random() > 0.95;
+        let newEstado = proceso.estado;
+        
+        if (shouldChangeState) {
+          const estados = ["activo", "espera", "bloqueado"];
+          newEstado = estados[Math.floor(Math.random() * estados.length)];
+        }
+        
+        return {
+          ...proceso,
+          cpu: Math.max(0.1, Math.min(proceso.cpu + cpuChange, 8)),
+          memoria: Math.max(8, Math.min(proceso.memoria + memChange, 
+            proceso.nombre === "interfaz_grafica.exe" ? 300 : 200)),
+          estado: newEstado
+        };
+      }));
+      
+      // Posibilidad de añadir un nuevo proceso ocasionalmente
+      if (Math.random() > 0.97 && procesos.length < 8) {
+        const procesosTipo = [
+          "antivirus.exe", "diagnostico.sys", "servicio_red.exe", 
+          "multimedia.exe", "actualizacion.exe"
+        ];
+        const randomProcess = procesosTipo[Math.floor(Math.random() * procesosTipo.length)];
+        const newId = Math.max(...procesos.map(p => p.id)) + 1;
+        
+        setProcesos(prev => [...prev, {
+          id: newId,
+          nombre: randomProcess,
+          cpu: Math.random() * 3 + 0.5,
+          memoria: Math.floor(Math.random() * 100 + 20),
+          estado: "activo"
+        }]);
+      }
+      
+      // Actualizar historial de CPU y memoria
+      setCpuHistory(prev => [...prev.slice(1), Math.random() * 40 + resources.cpu / 2]);
+      setMemHistory(prev => [...prev.slice(1), (resources.memory.used / resources.memory.total) * 100]);
       
       // Simular un cambio aleatorio en los recursos del sistema
       updateResources(Math.random() * 5 - 2.5, Math.floor(Math.random() * 50 - 25));
-    }, 3000);
+    }, 2000); // Actualización más frecuente para mayor dinamismo
     
     return () => clearInterval(intervalId);
-  }, [updateResources]);
+  }, [resources.cpu, resources.memory.used, resources.memory.total, procesos, updateResources]);
 
   // Calcular porcentajes
   const memoriaPorcentaje = (resources.memory.used / resources.memory.total) * 100;
@@ -59,7 +99,7 @@ export const Tr3sMonitorSistema = () => {
   const renderBarraProgreso = (valor: number, colorClase: string = "bg-cyan-400") => (
     <div className="w-full h-1.5 bg-zinc-700 rounded-full mt-1 mb-2">
       <div 
-        className={`h-1.5 ${colorClase} rounded-full`}
+        className={`h-1.5 ${colorClase} rounded-full transition-all duration-500 ease-in-out`}
         style={{ width: `${Math.max(0, Math.min(100, valor))}%` }}
       />
     </div>
@@ -207,7 +247,17 @@ export const Tr3sMonitorSistema = () => {
                 {procesos.map(proceso => (
                   <tr key={proceso.id} className="border-b border-zinc-700">
                     <td className="p-2">{proceso.id}</td>
-                    <td className="p-2">{proceso.nombre}</td>
+                    <td className="p-2">
+                      <div className="flex items-center gap-1">
+                        {proceso.estado === "activo" && (
+                          <span className="flex h-1.5 w-1.5 relative">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
+                          </span>
+                        )}
+                        {proceso.nombre}
+                      </div>
+                    </td>
                     <td className="p-2">
                       <span className={`px-1.5 py-0.5 rounded-full text-xs ${
                         proceso.estado === "activo" ? "bg-green-900 text-green-300" : 
@@ -217,8 +267,28 @@ export const Tr3sMonitorSistema = () => {
                         {proceso.estado}
                       </span>
                     </td>
-                    <td className="p-2">{proceso.cpu.toFixed(1)}%</td>
-                    <td className="p-2">{proceso.memoria} MB</td>
+                    <td className="p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1 bg-zinc-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-1 bg-cyan-500 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, proceso.cpu * 12.5)}%` }}
+                          ></div>
+                        </div>
+                        <span>{proceso.cpu.toFixed(1)}%</span>
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1 bg-zinc-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-1 bg-purple-500 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, (proceso.memoria / 300) * 100)}%` }}
+                          ></div>
+                        </div>
+                        <span>{proceso.memoria} MB</span>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -232,13 +302,36 @@ export const Tr3sMonitorSistema = () => {
           <div className="bg-zinc-800 p-3 rounded-lg">
             <h3 className="text-sm font-medium mb-3">Uso de CPU en tiempo real</h3>
             <div className="h-32 flex items-end justify-between">
-              {[...Array(20)].map((_, i) => {
-                const altura = 10 + Math.random() * 90;
+              {cpuHistory.map((altura, i) => {
                 return (
                   <div 
                     key={i}
                     style={{ height: `${altura}%` }}
-                    className={`w-2 ${altura > 70 ? 'bg-red-500' : altura > 40 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                    className={`w-2 ${altura > 70 ? 'bg-red-500' : altura > 40 ? 'bg-yellow-500' : 'bg-green-500'} transition-all duration-300`}
+                  />
+                );
+              })}
+            </div>
+            <div className="flex justify-between text-xs text-gray-400 mt-2">
+              <span>0s</span>
+              <span>10s</span>
+              <span>20s</span>
+              <span>30s</span>
+              <span>40s</span>
+              <span>50s</span>
+              <span>60s</span>
+            </div>
+          </div>
+
+          <div className="bg-zinc-800 p-3 rounded-lg">
+            <h3 className="text-sm font-medium mb-3">Uso de memoria en tiempo real</h3>
+            <div className="h-32 flex items-end justify-between">
+              {memHistory.map((altura, i) => {
+                return (
+                  <div 
+                    key={i}
+                    style={{ height: `${altura}%` }}
+                    className={`w-2 ${altura > 70 ? 'bg-red-500' : altura > 40 ? 'bg-purple-500' : 'bg-blue-500'} transition-all duration-300`}
                   />
                 );
               })}
@@ -286,3 +379,4 @@ export const Tr3sMonitorSistema = () => {
     </div>
   );
 };
+

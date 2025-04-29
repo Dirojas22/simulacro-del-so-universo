@@ -229,12 +229,20 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
       };
     
     case 'ACTUALIZAR_PROCESO': {
-      const { id, cambios } = action.payload;
       return {
         ...state,
-        procesos: state.procesos.map(p => 
-          p.id === id ? { ...p, ...cambios } : p
-        ),
+        procesos: state.procesos.map((proceso) => {
+          if (proceso.id === action.payload.id) {
+            // Ensure estado stays within the allowed types
+            let cambios = {...action.payload.cambios};
+            if (cambios.estado && !['activo', 'bloqueado', 'esperando', 'terminado'].includes(cambios.estado as string)) {
+              cambios.estado = proceso.estado; // Keep the original estado if invalid
+            }
+            
+            return { ...proceso, ...cambios };
+          }
+          return proceso;
+        })
       };
     }
     

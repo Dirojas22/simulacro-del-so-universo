@@ -5,6 +5,7 @@ import { Tr3sIconos } from "./Tr3sIconos";
 import { Tr3sBarraTareas } from "./Tr3sBarraTareas";
 import { Tr3sVentana } from "./Tr3sVentana";
 import { Tr3sProvider, useTr3s } from "./Tr3sContext";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const Tr3sOSContent = () => {
   const { state } = useTr3s();
@@ -64,7 +65,9 @@ export const Tr3sOS = () => {
   
   return (
     <Tr3sProvider>
-      <Tr3sOSContent />
+      <TooltipProvider>
+        <Tr3sOSContent />
+      </TooltipProvider>
     </Tr3sProvider>
   );
 };

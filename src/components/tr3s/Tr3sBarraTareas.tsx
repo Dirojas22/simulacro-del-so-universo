@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useTr3s } from "./Tr3sContext";
 import { Terminal, FileText, Calculator, Settings, File, Globe, BookOpen, Wifi, WifiOff, Battery, BatteryCharging, Clock } from "lucide-react";
 import { useHardwareStatus } from "../../hooks/useHardwareStatus";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const Tr3sBarraTareas = () => {
   const { state, abrirApp, activarApp, toggleWifi } = useTr3s();
@@ -88,29 +89,50 @@ export const Tr3sBarraTareas = () => {
       
       <div className="flex-1 flex justify-end gap-3 items-center">
         {/* WiFi - now clickable */}
-        <div 
-          className="flex items-center justify-center w-6 h-6 rounded-full bg-white/10 cursor-pointer hover:bg-white/20"
-          onClick={toggleWifi}
-        >
-          {network.online ? 
-            <Wifi size={14} className="text-cyan-400" /> : 
-            <WifiOff size={14} className="text-gray-400" />
-          }
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div 
+              className="flex items-center justify-center w-6 h-6 rounded-full bg-white/10 cursor-pointer hover:bg-white/20"
+              onClick={toggleWifi}
+            >
+              {network.online ? 
+                <Wifi size={14} className="text-cyan-400" /> : 
+                <WifiOff size={14} className="text-gray-400" />
+              }
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{network.online ? "WiFi activado" : "WiFi desactivado"}</p>
+          </TooltipContent>
+        </Tooltip>
         
         {/* Batería */}
-        <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
-          {getBatteryIcon()}
-          <span className="text-xs">{battery.level}%</span>
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
+              {getBatteryIcon()}
+              <span className="text-xs">{battery.level}%</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{battery.charging ? "Cargando" : "En uso de batería"}</p>
+          </TooltipContent>
+        </Tooltip>
         
         {/* Hora y fecha */}
-        <div className="bg-white/10 rounded-full px-3 py-1 text-sm flex items-center">
-          <Clock size={14} className="mr-1" />
-          <span>
-            {fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="bg-white/10 rounded-full px-3 py-1 text-sm flex items-center">
+              <Clock size={14} className="mr-1" />
+              <span>
+                {fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{fecha.toLocaleDateString()}</p>
+          </TooltipContent>
+        </Tooltip>
         
         <button 
           onClick={() => abrirApp('ajustes')}

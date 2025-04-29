@@ -461,7 +461,7 @@ export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         payload: {
           id: nuevoId,
           nombre: appInfo.nombre,
-          estado: 'activo',
+          estado: 'activo' as const,
           memoria: Math.floor(Math.random() * 50) + 20, // 20-70 MB
           cpu: Math.floor(Math.random() * 5) + 1, // 1-5%
           quantum: 2,

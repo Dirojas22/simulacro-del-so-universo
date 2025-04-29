@@ -51,6 +51,9 @@ const Escritorio: React.FC = () => {
     );
   }
 
+  // Usar una imagen de fondo abstracta
+  const fondoAbstracto = "/abstract-gradient-bg.jpg";
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -58,7 +61,7 @@ const Escritorio: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="h-screen w-full overflow-hidden bg-dos-blue text-white relative"
       style={{ 
-        backgroundImage: `url('${state.fondoActual}')`,
+        backgroundImage: `url('${state.fondoActual || fondoAbstracto}')`,
         backgroundSize: "cover",
         backgroundPosition: "center"
       }}

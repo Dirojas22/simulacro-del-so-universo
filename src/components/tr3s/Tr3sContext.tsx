@@ -13,13 +13,15 @@ interface Tr3sState {
   aplicaciones: Tr3sApp[];
   appActiva: string | null;
   fondoPantalla: string;
+  notas: string;
 }
 
 type Tr3sAction = 
   | { type: 'ABRIR_APP', payload: string }
   | { type: 'CERRAR_APP', payload: string }
   | { type: 'ACTIVAR_APP', payload: string }
-  | { type: 'CAMBIAR_FONDO', payload: string };
+  | { type: 'CAMBIAR_FONDO', payload: string }
+  | { type: 'GUARDAR_NOTAS', payload: string };
 
 const initialState: Tr3sState = {
   aplicaciones: [
@@ -30,9 +32,11 @@ const initialState: Tr3sState = {
     { id: 'ajustes', nombre: 'Ajustes', icono: 'settings', abierta: false, activa: false },
     { id: 'navegador', nombre: 'Navegador', icono: 'globe', abierta: false, activa: false },
     { id: 'manual', nombre: 'Manual', icono: 'book', abierta: false, activa: false },
+    { id: 'monitor', nombre: 'Monitor', icono: 'activity', abierta: false, activa: false },
   ],
   appActiva: null,
-  fondoPantalla: 'gradient'
+  fondoPantalla: 'gradient',
+  notas: ''
 };
 
 const tr3sReducer = (state: Tr3sState, action: Tr3sAction): Tr3sState => {
@@ -72,6 +76,11 @@ const tr3sReducer = (state: Tr3sState, action: Tr3sAction): Tr3sState => {
         ...state,
         fondoPantalla: action.payload
       };
+    case 'GUARDAR_NOTAS':
+      return {
+        ...state,
+        notas: action.payload
+      };
     default:
       return state;
   }
@@ -83,6 +92,7 @@ interface Tr3sContextType {
   cerrarApp: (id: string) => void;
   activarApp: (id: string) => void;
   cambiarFondo: (fondo: string) => void;
+  guardarNotas: (texto: string) => void;
 }
 
 const Tr3sContext = createContext<Tr3sContextType | undefined>(undefined);
@@ -106,8 +116,12 @@ export const Tr3sProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'CAMBIAR_FONDO', payload: fondo });
   };
 
+  const guardarNotas = (texto: string) => {
+    dispatch({ type: 'GUARDAR_NOTAS', payload: texto });
+  };
+
   return (
-    <Tr3sContext.Provider value={{ state, abrirApp, cerrarApp, activarApp, cambiarFondo }}>
+    <Tr3sContext.Provider value={{ state, abrirApp, cerrarApp, activarApp, cambiarFondo, guardarNotas }}>
       {children}
     </Tr3sContext.Provider>
   );

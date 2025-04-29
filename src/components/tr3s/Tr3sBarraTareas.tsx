@@ -1,10 +1,37 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useTr3s } from "./Tr3sContext";
-import { Terminal, FileText, Calculator, Settings, File, Globe, BookOpen } from "lucide-react";
+import { Terminal, FileText, Calculator, Settings, File, Globe, BookOpen, Volume2, Wifi, Battery, BatteryCharging, Clock } from "lucide-react";
+import { useHardwareStatus } from "../../hooks/useHardwareStatus";
 
 export const Tr3sBarraTareas = () => {
   const { state, abrirApp, activarApp } = useTr3s();
+  const { battery, network } = useHardwareStatus();
+  const [fecha, setFecha] = useState(new Date());
+  const [volumen, setVolumen] = useState(75);
+  
+  // Actualizar hora cada minuto
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setFecha(new Date());
+    }, 60000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // Función para obtener icono de batería
+  const getBatteryIcon = () => {
+    if (battery.charging) {
+      return <BatteryCharging size={16} className="text-green-400" />;
+    }
+    if (battery.level > 80) {
+      return <Battery size={16} className="text-green-400" />;
+    } else if (battery.level > 40) {
+      return <Battery size={16} className="text-yellow-400" />;
+    } else {
+      return <Battery size={16} className="text-red-400" />;
+    }
+  };
 
   const getIcono = (tipo: string) => {
     switch (tipo) {
@@ -60,16 +87,43 @@ export const Tr3sBarraTareas = () => {
         ))}
       </div>
       
-      <div className="flex-1 flex justify-end gap-3">
+      <div className="flex-1 flex justify-end gap-3 items-center">
+        {/* Volumen */}
+        <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
+          <Volume2 size={14} />
+          <div className="w-12 h-1 bg-white/20 rounded-full">
+            <div 
+              className="h-1 bg-cyan-400 rounded-full" 
+              style={{ width: `${volumen}%` }}
+            />
+          </div>
+        </div>
+        
+        {/* WiFi */}
+        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/10">
+          <Wifi size={14} className={network.online ? "text-cyan-400" : "text-gray-400"} />
+        </div>
+        
+        {/* Batería */}
+        <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
+          {getBatteryIcon()}
+          <span className="text-xs">{battery.level}%</span>
+        </div>
+        
+        {/* Hora y fecha */}
+        <div className="bg-white/10 rounded-full px-3 py-1 text-sm flex items-center">
+          <Clock size={14} className="mr-1" />
+          <span>
+            {fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+        
         <button 
           onClick={() => abrirApp('ajustes')}
           className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-all"
         >
           <Settings size={16} />
         </button>
-        <div className="bg-white/10 rounded-full px-3 py-1 text-sm">
-          {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </div>
       </div>
     </div>
   );

@@ -1,12 +1,13 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useTr3s } from "./Tr3sContext";
-import { X, Minus, Terminal, Calculator, FileText, File, Settings, Globe, BookOpen } from "lucide-react";
+import { X, Minus, Terminal, Calculator, FileText, File, Settings, Globe, BookOpen, Maximize2, Activity } from "lucide-react";
 import { Rnd } from "react-rnd";
+import { Tr3sMonitorSistema } from "./aplicaciones/Tr3sMonitorSistema";
 
 export const Tr3sVentana = () => {
-  const { state, cerrarApp, activarApp } = useTr3s();
+  const { state, cerrarApp, activarApp, guardarNotas } = useTr3s();
   
   // Estado para la calculadora
   const [calculo, setCalculo] = useState("");
@@ -21,7 +22,7 @@ export const Tr3sVentana = () => {
   const [cargandoUrl, setCargandoUrl] = useState(false);
   
   // Estado para las notas
-  const [textoNotas, setTextoNotas] = useState("");
+  const [textoNotas, setTextoNotas] = useState(state.notas || "");
   
   // Estado para los ajustes
   const [ajustes, setAjustes] = useState({
@@ -29,6 +30,21 @@ export const Tr3sVentana = () => {
     notificaciones: true,
     volumen: 75
   });
+  
+  // Estado para ventanas maximizadas
+  const [ventanasMaximizadas, setVentanasMaximizadas] = useState<{[key: string]: boolean}>({});
+  const [tamañosPrevios, setTamañosPrevios] = useState<{[key: string]: {width: number, height: number, x: number, y: number}}>({});
+  
+  // Guardar notas automáticamente
+  useEffect(() => {
+    if (state.notas !== textoNotas) {
+      const timer = setTimeout(() => {
+        guardarNotas(textoNotas);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [textoNotas, guardarNotas, state.notas]);
   
   // Funciones para la calculadora
   const agregarDigito = (digito: string) => {
@@ -65,17 +81,62 @@ export const Tr3sVentana = () => {
       
       // Procesar comandos simples
       if (entradaComando === "help") {
-        nuevosComandos.push("Comandos disponibles: help, clear, date, echo, ls, version");
+        nuevosComandos.push("Comandos disponibles: help, clear, date, echo, ls, pwd, time, whoami, sysinfo, version, mkdir, cd, rm, cat, ps, kill");
       } else if (entradaComando === "clear") {
         return setComandos(["TR3S Terminal v1.0"]);
       } else if (entradaComando === "date") {
-        nuevosComandos.push(new Date().toString());
+        nuevosComandos.push(new Date().toDateString());
       } else if (entradaComando.startsWith("echo ")) {
         nuevosComandos.push(entradaComando.substring(5));
       } else if (entradaComando === "ls") {
-        nuevosComandos.push("documentos/  descargas/  imágenes/  música/  videos/");
+        nuevosComandos.push("documentos/  descargas/  imágenes/  música/  videos/  config.sys  boot.sys");
+      } else if (entradaComando === "pwd") {
+        nuevosComandos.push("/home/user");
+      } else if (entradaComando === "time") {
+        nuevosComandos.push(new Date().toLocaleTimeString());
+      } else if (entradaComando === "whoami") {
+        nuevosComandos.push("usuario@tr3s-os");
+      } else if (entradaComando === "sysinfo") {
+        nuevosComandos.push("TR3S OS v1.0.0");
+        nuevosComandos.push("Núcleo: TR3S Kernel 2025");
+        nuevosComandos.push("CPU: 4 núcleos @ 3.2GHz");
+        nuevosComandos.push("RAM: 8 GB (3.2 GB en uso)");
+        nuevosComandos.push("Almacenamiento: 512 GB (128 GB en uso)");
       } else if (entradaComando === "version") {
         nuevosComandos.push("TR3S OS v1.0.0");
+      } else if (entradaComando.startsWith("mkdir ")) {
+        const directorio = entradaComando.substring(6);
+        nuevosComandos.push(`Directorio ${directorio} creado.`);
+      } else if (entradaComando.startsWith("cd ")) {
+        const directorio = entradaComando.substring(3);
+        nuevosComandos.push(`Cambiado al directorio ${directorio}`);
+      } else if (entradaComando.startsWith("rm ")) {
+        const archivo = entradaComando.substring(3);
+        nuevosComandos.push(`Archivo/directorio ${archivo} eliminado.`);
+      } else if (entradaComando === "ps") {
+        nuevosComandos.push("PID\tNOMBRE\t\tESTADO\t\tCPU\tMEM");
+        nuevosComandos.push("1\tsistema.sys\tactivo\t\t2.3%\t45MB");
+        nuevosComandos.push("2\ttr3s_kernel.exe\tactivo\t\t1.5%\t128MB");
+        nuevosComandos.push("3\tinterfaz_grafica.exe\tactivo\t\t3.2%\t256MB");
+      } else if (entradaComando.startsWith("kill ")) {
+        const pid = entradaComando.substring(5);
+        if (pid === "1" || pid === "2" || pid === "3") {
+          nuevosComandos.push(`No se puede terminar proceso con PID ${pid}: proceso del sistema`);
+        } else {
+          nuevosComandos.push(`Proceso con PID ${pid} terminado.`);
+        }
+      } else if (entradaComando.startsWith("cat ")) {
+        const archivo = entradaComando.substring(4);
+        if (archivo === "config.sys") {
+          nuevosComandos.push("## Configuración del sistema TR3S");
+          nuevosComandos.push("sistema.memoriainicial=2048");
+          nuevosComandos.push("sistema.arranque=rapido");
+          nuevosComandos.push("sistema.idioma=es_ES");
+        } else if (archivo === "boot.sys") {
+          nuevosComandos.push("[!] Este archivo está protegido por el sistema.");
+        } else {
+          nuevosComandos.push(`No se encuentra el archivo ${archivo}`);
+        }
       } else if (entradaComando.trim() !== "") {
         nuevosComandos.push(`Comando no reconocido: ${entradaComando}`);
       }
@@ -105,6 +166,17 @@ export const Tr3sVentana = () => {
       ...prev,
       [ajuste]: valor
     }));
+  };
+  
+  // Función para maximizar/restaurar ventana
+  const toggleMaximizar = (appId: string) => {
+    if (ventanasMaximizadas[appId]) {
+      // Restaurar tamaño anterior
+      setVentanasMaximizadas({...ventanasMaximizadas, [appId]: false});
+    } else {
+      // Guardar tamaño actual y maximizar
+      setVentanasMaximizadas({...ventanasMaximizadas, [appId]: true});
+    }
   };
   
   const renderContenido = (appId: string) => {
@@ -172,6 +244,9 @@ export const Tr3sVentana = () => {
               value={textoNotas}
               onChange={(e) => setTextoNotas(e.target.value)}
             />
+            <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+              {textoNotas !== state.notas ? "Guardando..." : "Guardado"}
+            </div>
           </div>
         );
       case 'archivos':
@@ -260,6 +335,81 @@ export const Tr3sVentana = () => {
               </div>
               
               <div className="bg-zinc-800 p-4 rounded-lg">
+                <h3 className="font-medium mb-3">Administrador de memoria</h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm">Memoria física</span>
+                      <span className="text-sm">4.3 GB / 8 GB</span>
+                    </div>
+                    <div className="w-full h-2 bg-zinc-700 rounded-full">
+                      <div 
+                        className="h-2 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full" 
+                        style={{ width: '54%' }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm">Memoria virtual</span>
+                      <span className="text-sm">2.1 GB / 4 GB</span>
+                    </div>
+                    <div className="w-full h-2 bg-zinc-700 rounded-full">
+                      <div 
+                        className="h-2 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full" 
+                        style={{ width: '52%' }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm">Memoria caché</span>
+                      <span className="text-sm">512 MB / 768 MB</span>
+                    </div>
+                    <div className="w-full h-2 bg-zinc-700 rounded-full">
+                      <div 
+                        className="h-2 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full" 
+                        style={{ width: '67%' }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t border-zinc-700">
+                    <h4 className="text-sm font-medium mb-2">Procesos con mayor uso de memoria</h4>
+                    <ul className="text-xs space-y-1">
+                      <li className="flex justify-between">
+                        <span>interfaz_grafica.exe</span>
+                        <span>256 MB</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>tr3s_kernel.exe</span>
+                        <span>128 MB</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>navegador.exe</span>
+                        <span>96 MB</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>archivos.exe</span>
+                        <span>64 MB</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="flex gap-2 justify-end">
+                    <button className="text-sm bg-zinc-700 hover:bg-zinc-600 px-3 py-1 rounded">
+                      Liberar memoria
+                    </button>
+                    <button className="text-sm bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded">
+                      Optimizar
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-zinc-800 p-4 rounded-lg">
                 <h3 className="font-medium mb-3">Acerca de TR3S OS</h3>
                 <div className="text-sm text-gray-300">
                   <p className="mb-1">Versión: 1.0.0</p>
@@ -342,9 +492,22 @@ export const Tr3sVentana = () => {
                   El escritorio de TR3S OS está diseñado para ser intuitivo y fácil de usar. En la pantalla principal encontrarás:
                 </p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Iconos de aplicaciones</li>
-                  <li>Barra de tareas en la parte inferior</li>
-                  <li>Indicador de hora</li>
+                  <li>Iconos de aplicaciones en el escritorio</li>
+                  <li>Barra de tareas en la parte inferior con indicadores de sistema</li>
+                  <li>Indicador de hora, volumen, WiFi y batería</li>
+                </ul>
+              </div>
+              
+              <div className="bg-zinc-800 p-4 rounded-lg">
+                <h2 className="text-lg font-medium mb-2">Ventanas</h2>
+                <p className="mb-2">
+                  Las ventanas de TR3S OS se pueden manipular de varias formas:
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Arrastrar desde la barra de título para mover</li>
+                  <li>Cambiar tamaño desde los bordes</li>
+                  <li>Botón de maximizar para expandir a pantalla completa</li>
+                  <li>Botón de cerrar para salir de la aplicación</li>
                 </ul>
               </div>
               
@@ -355,22 +518,43 @@ export const Tr3sVentana = () => {
                 <p className="mb-2">
                   La Terminal te permite interactuar con el sistema mediante comandos de texto. Algunos comandos útiles:
                 </p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>help - Muestra la lista de comandos disponibles</li>
-                  <li>clear - Limpia la pantalla</li>
-                  <li>date - Muestra la fecha y hora actuales</li>
-                  <li>ls - Lista los archivos del directorio actual</li>
-                  <li>version - Muestra la versión del sistema</li>
-                </ul>
+                <table className="w-full border-collapse mb-2">
+                  <thead>
+                    <tr className="bg-zinc-700">
+                      <th className="p-1 text-left">Comando</th>
+                      <th className="p-1 text-left">Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-xs">
+                    <tr className="border-t border-zinc-700"><td className="p-1">help</td><td className="p-1">Muestra la lista de comandos disponibles</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">clear</td><td className="p-1">Limpia la pantalla</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">date</td><td className="p-1">Muestra la fecha actual</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">time</td><td className="p-1">Muestra la hora actual</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">echo [texto]</td><td className="p-1">Muestra el texto en pantalla</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">ls</td><td className="p-1">Lista los archivos del directorio actual</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">pwd</td><td className="p-1">Muestra el directorio actual</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">whoami</td><td className="p-1">Muestra el nombre de usuario</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">sysinfo</td><td className="p-1">Muestra información del sistema</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">version</td><td className="p-1">Muestra la versión del sistema</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">mkdir [nombre]</td><td className="p-1">Crea un nuevo directorio</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">cd [ruta]</td><td className="p-1">Cambia de directorio</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">rm [archivo]</td><td className="p-1">Elimina un archivo o directorio</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">cat [archivo]</td><td className="p-1">Muestra el contenido de un archivo</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">ps</td><td className="p-1">Lista los procesos en ejecución</td></tr>
+                    <tr className="border-t border-zinc-700"><td className="p-1">kill [pid]</td><td className="p-1">Termina un proceso por su PID</td></tr>
+                  </tbody>
+                </table>
                 
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Calculadora</h3>
                 <p className="mb-1">
                   Una calculadora sencilla pero potente con operaciones básicas: suma, resta, multiplicación y división.
+                  Soporta paréntesis y operaciones complejas.
                 </p>
                 
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Notas</h3>
                 <p className="mb-1">
                   Aplicación para tomar notas rápidas. El contenido se guarda automáticamente mientras escribes.
+                  Verás una indicación de "Guardando..." cuando se estén guardando los cambios.
                 </p>
                 
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Archivos</h3>
@@ -378,9 +562,16 @@ export const Tr3sVentana = () => {
                   Explorador de archivos para navegar por el sistema de archivos, gestionar documentos, imágenes y más.
                 </p>
                 
+                <h3 className="font-medium text-cyan-400 mt-3 mb-1">Monitor del Sistema</h3>
+                <p className="mb-1">
+                  Herramienta de monitoreo que muestra el uso de CPU, memoria y disco del sistema. También permite ver
+                  procesos en ejecución y estadísticas de rendimiento en tiempo real.
+                </p>
+                
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Ajustes</h3>
                 <p className="mb-1">
-                  Configura tu sistema según tus preferencias: apariencia, notificaciones, volumen y más.
+                  Configura tu sistema según tus preferencias: apariencia, notificaciones, volumen y administración de memoria.
+                  Puedes optimizar el rendimiento del sistema desde aquí.
                 </p>
                 
                 <h3 className="font-medium text-cyan-400 mt-3 mb-1">Navegador</h3>
@@ -409,6 +600,8 @@ export const Tr3sVentana = () => {
             </div>
           </div>
         );
+      case 'monitor':
+        return <Tr3sMonitorSistema />;
       default:
         return <div>App no encontrada</div>;
     }
@@ -430,6 +623,8 @@ export const Tr3sVentana = () => {
         return <Globe size={18} className="text-white" />;
       case 'book':
         return <BookOpen size={18} className="text-white" />;
+      case 'activity':
+        return <Activity size={18} className="text-white" />;
       default:
         return <File size={18} className="text-white" />;
     }
@@ -447,12 +642,16 @@ export const Tr3sVentana = () => {
               width: 500,
               height: 400
             }}
+            size={ventanasMaximizadas[app.id] ? { width: window.innerWidth, height: window.innerHeight - 40 } : undefined}
+            position={ventanasMaximizadas[app.id] ? { x: 0, y: 0 } : undefined}
             minWidth={300}
             minHeight={200}
             bounds="parent"
             dragHandleClassName="app-draghandle"
             className={`rounded-lg overflow-hidden shadow-2xl ${app.activa ? 'z-10' : 'z-0'}`}
             onMouseDown={() => activarApp(app.id)}
+            disableDragging={ventanasMaximizadas[app.id]}
+            enableResizing={!ventanasMaximizadas[app.id]}
           >
             <div className="flex flex-col h-full">
               <div 
@@ -471,6 +670,12 @@ export const Tr3sVentana = () => {
                     className="w-5 h-5 flex items-center justify-center rounded-full bg-zinc-600 hover:bg-zinc-500"
                   >
                     <Minus size={12} />
+                  </button>
+                  <button 
+                    className="w-5 h-5 flex items-center justify-center rounded-full bg-zinc-600 hover:bg-zinc-500"
+                    onClick={() => toggleMaximizar(app.id)}
+                  >
+                    <Maximize2 size={12} />
                   </button>
                   <button 
                     className="w-5 h-5 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-500"

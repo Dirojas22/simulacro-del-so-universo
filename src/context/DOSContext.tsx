@@ -162,7 +162,7 @@ const initialState: DOSState = {
   },
   volumen: 50,
   isLoggedIn: false,
-  fondoActual: fondosDisponibles.abstracto[3],
+  fondoActual: fondosDisponibles.tecnologia[0],
   usuarioActual: null,
   usuarios: usuariosDisponibles,
 };
@@ -191,7 +191,7 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
       return {
         ...state,
         procesos: state.procesos.map(p => 
-          p.id === action.payload ? { ...p, estado: 'terminado' as const, cpu: 0 } : p
+          p.id === action.payload ? { ...p, estado: 'terminado', cpu: 0 } : p
         ),
         recursos: {
           ...state.recursos,
@@ -215,7 +215,7 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
       return {
         ...state,
         procesos: state.procesos.map(p => 
-          p.id === action.payload ? { ...p, estado: 'bloqueado' as const } : p
+          p.id === action.payload ? { ...p, estado: 'bloqueado' } : p
         ),
       };
     }
@@ -229,16 +229,12 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
       };
     
     case 'ACTUALIZAR_PROCESO': {
+      const { id, cambios } = action.payload;
       return {
         ...state,
-        procesos: state.procesos.map((proceso) => {
-          if (proceso.id === action.payload.id) {
-            // Ensure estado stays within the allowed types
-            let cambios = {...action.payload.cambios};
-            return { ...proceso, ...cambios };
-          }
-          return proceso;
-        })
+        procesos: state.procesos.map(p => 
+          p.id === id ? { ...p, ...cambios } : p
+        ),
       };
     }
     
@@ -271,8 +267,8 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
           ...state,
           aplicacionesAbiertas: state.aplicacionesAbiertas.map(app => 
             app.id === action.payload.id 
-              ? { ...app, esMinimizado: false, activa: true }
-              : { ...app, activa: false }
+              ? { ...app, esMinimizado: false, activo: true }
+              : { ...app, activo: false }
           ),
           aplicacionActiva: action.payload.id,
         };
@@ -281,8 +277,8 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
       // Create a new process ID
       const nuevoProcesoId = Math.max(...state.procesos.map(p => p.id), 0) + 1;
       
-      // Create a new process for the application with correct tipos
-      const nuevoProceso: Proceso = {
+      // Create a new process for the application
+      const nuevoProceso = {
         id: nuevoProcesoId,
         nombre: action.payload.nombre,
         estado: 'activo',
@@ -298,7 +294,7 @@ const dosReducer = (state: DOSState, action: DOSAction): DOSState => {
         ...state,
         aplicacionesAbiertas: [
           ...state.aplicacionesAbiertas.map(app => ({ ...app, activo: false })),
-          { ...action.payload, esMinimizado: false, activa: true }
+          { ...action.payload, esMinimizado: false, activo: true }
         ],
         aplicacionActiva: action.payload.id,
         procesos: [...state.procesos, nuevoProceso],
@@ -446,7 +442,7 @@ export const DOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (appInfo) {
       dispatch({ 
         type: 'ABRIR_APLICACION', 
-        payload: { ...appInfo, esMinimizado: false, activa: true } 
+        payload: { ...appInfo, esMinimizado: false, activo: true } 
       });
       
       // Registrar evento

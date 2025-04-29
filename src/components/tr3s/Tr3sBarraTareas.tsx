@@ -1,34 +1,10 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useTr3s } from "./Tr3sContext";
-import { 
-  Terminal, 
-  FileText, 
-  Calculator, 
-  Settings, 
-  File, 
-  Globe, 
-  BookOpen,
-  Volume2,
-  Wifi,
-  BatteryMedium,
-  BatteryCharging
-} from "lucide-react";
-import { useHardwareStatus } from "@/hooks/useHardwareStatus";
+import { Terminal, FileText, Calculator, Settings, File, Globe, BookOpen } from "lucide-react";
 
 export const Tr3sBarraTareas = () => {
   const { state, abrirApp, activarApp } = useTr3s();
-  const { battery, network } = useHardwareStatus();
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [volume, setVolume] = useState(70);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   const getIcono = (tipo: string) => {
     switch (tipo) {
@@ -49,14 +25,6 @@ export const Tr3sBarraTareas = () => {
       default:
         return <File size={18} />;
     }
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString(undefined, { 
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
   };
 
   return (
@@ -92,44 +60,15 @@ export const Tr3sBarraTareas = () => {
         ))}
       </div>
       
-      <div className="flex-1 flex justify-end items-center gap-3">
-        <div className="flex items-center bg-white/10 rounded-full px-2 py-1">
-          <Volume2 size={14} className="mr-1" />
-          <div className="w-12 h-1.5 bg-white/20 rounded-full">
-            <div 
-              className="h-1.5 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"
-              style={{ width: `${volume}%` }}
-            />
-          </div>
-        </div>
-        
-        <div className="flex items-center bg-white/10 rounded-full px-2 py-1">
-          {network.online ? 
-            <Wifi size={14} className="text-cyan-400" /> : 
-            <Wifi size={14} className="text-gray-400" />
-          }
-        </div>
-        
-        <div className="flex items-center bg-white/10 rounded-full px-2 py-1">
-          {battery.charging ? 
-            <BatteryCharging size={14} className="text-green-400" /> : 
-            <BatteryMedium size={14} className={battery.level > 20 ? "text-cyan-400" : "text-red-400"} />
-          }
-          <span className="text-xs ml-1">{battery.level}%</span>
-        </div>
-
+      <div className="flex-1 flex justify-end gap-3">
         <button 
           onClick={() => abrirApp('ajustes')}
           className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-all"
         >
           <Settings size={16} />
         </button>
-        
-        <div className="flex flex-col items-end text-xs">
-          <div className="text-white/80">{formatDate(currentTime)}</div>
-          <div className="bg-white/10 rounded-full px-2 py-0.5">
-            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </div>
+        <div className="bg-white/10 rounded-full px-3 py-1 text-sm">
+          {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
     </div>
